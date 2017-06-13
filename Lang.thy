@@ -11,12 +11,11 @@ subsection {* Language syntax and semantics *}
 text {* We define the syntax and the operational semantics of the programming 
 language of O'Hearn and Brookes. *}
 
-types
-  var   = string                (*r Variables *)
-  rname = string                (*r Resource names *)
-  heap  = "(nat \<rightharpoonup> nat)"        (*r Heaps *)
-  stack = "(var \<Rightarrow> nat)"        (*r Stacks *)
-  state = "stack \<times> heap"        (*r States *)
+type_synonym  var   = string                (*r Variables *)
+type_synonym  rname = string                (*r Resource names *)
+type_synonym  heap  = "(nat \<rightharpoonup> nat)"        (*r Heaps *)
+type_synonym  stack = "(var \<Rightarrow> nat)"        (*r Stacks *)
+type_synonym  state = "stack \<times> heap"        (*r States *)
 
 datatype exp =                  (*r Arithmetic expressions *)
     Evar var                    (*r Variable *)
@@ -430,7 +429,7 @@ lemma skip_simps[simp]:
   "(rem_vars X C = Cskip) \<longleftrightarrow> (C = Cskip)"
   "(Cskip = rem_vars X C) \<longleftrightarrow> (C = Cskip)"
 by (auto elim: aborts.cases red.cases)
-   (induct C, auto split: split_if_asm)+
+   (induct C, auto split: if_split_asm)+
 
 lemma disjoint_minus: "disjoint (X - Z) Y = disjoint X (Y - Z)"
 by (auto simp add: disjoint_def)
@@ -438,19 +437,19 @@ by (auto simp add: disjoint_def)
 lemma aux_red[rule_format]:
   "red C \<sigma> C' \<sigma>' \<Longrightarrow> \<forall>X C1. C = rem_vars X C1 \<longrightarrow> disjoint X (fvC C) \<longrightarrow> \<not> aborts C1 \<sigma> \<longrightarrow>
    (\<exists>C2 s2. red C1 \<sigma> C2 (s2,snd \<sigma>') \<and> rem_vars X C2 = C' \<and> agrees (-X) (fst \<sigma>') s2)"
-apply (erule_tac red.induct, simp_all, tactic {* ALLGOALS (clarify_tac @{claset}) *})
-apply (case_tac C1, simp_all split: split_if_asm, (fastsimp simp add: agrees_def)+)
-apply (case_tac[1-5] C1a, simp_all split: split_if_asm, (fastsimp intro: agrees_refl)+)
-apply (case_tac[!] C1, simp_all split: split_if_asm)
-apply (tactic {* TRYALL (clarify_tac @{claset}) *}, simp_all add: disjoint_minus [THEN sym])
-apply (fastsimp simp add: agrees_def intro: ext)+
-apply (intro exI conjI, rule_tac v=v in red_Alloc, (fastsimp simp add: agrees_def intro:ext)+)
+apply (erule_tac red.induct, simp_all, tactic {* ALLGOALS (clarify_tac @{context}) *})
+apply (case_tac C1, simp_all split: if_split_asm, (fastforce simp add: agrees_def)+)
+apply (case_tac[1-5] C1a, simp_all split: if_split_asm, (fastforce intro: agrees_refl)+)
+apply (case_tac[!] C1, simp_all split: if_split_asm)
+apply (tactic {* TRYALL (clarify_tac @{context}) *}, simp_all add: disjoint_minus [THEN sym])
+apply (fastforce simp add: agrees_def intro: ext)+
+apply (intro exI conjI, rule_tac v=v in red_Alloc, (fastforce simp add: agrees_def intro:ext)+)
 done
 
 lemma aborts_remvars:
   "aborts (rem_vars X C) \<sigma> \<Longrightarrow> aborts C \<sigma>"
-apply (induct C arbitrary: X \<sigma>, erule_tac[!] aborts.cases, simp_all split: split_if_asm)
-apply (tactic {* TRYALL (fast_tac @{claset}) *})
+apply (induct C arbitrary: X \<sigma>, erule_tac[!] aborts.cases, simp_all split: if_split_asm)
+apply (tactic {* TRYALL (fast_tac @{context}) *})
 apply (clarsimp, rule, erule contrapos_nn, simp, erule disjoint_search, rule accesses_remvars)+
 done
 
@@ -493,12 +492,12 @@ lemma red_agrees[rule_format]:
   "red C \<sigma> C' \<sigma>' \<Longrightarrow> \<forall>X s. agrees X (fst \<sigma>) s \<longrightarrow> snd \<sigma> = h \<longrightarrow> fvC C \<subseteq> X \<longrightarrow> 
    (\<exists>s' h'. red C (s, h) C' (s', h') \<and> agrees X (fst \<sigma>') s' \<and> snd \<sigma>' = h')"
 apply (erule red.induct, simp_all)
-apply (tactic {* TRYALL (fast_tac @{claset}) *}, auto)
+apply (tactic {* TRYALL (fast_tac @{context}) *}, auto)
 apply (rule, rule conjI, rule red_If1, simp, subst bexp_agrees, fast+)
 apply (rule, rule conjI, rule red_If2, simp, subst bexp_agrees, fast+)
 apply (rule, rule conjI, rule, simp, subst exp_agrees, fast+)
-apply (drule_tac a="X \<union> {x}" and b="sa(x:=v)" in all2_imp2D, fastsimp simp add: agrees_def, fast)
- apply (clarsimp, rule, rule conjI, rule, fast+, fastsimp simp add: agrees_def)
+apply (drule_tac a="X \<union> {x}" and b="sa(x:=v)" in all2_imp2D, fastforce simp add: agrees_def, fast)
+ apply (clarsimp, rule, rule conjI, rule, fast+, fastforce simp add: agrees_def)
 apply (rule, rule conjI, rule, simp, subst bexp_agrees, fast+)
 apply (rule, rule, rule, fast, simp_all, subst exp_agrees, fast)
  apply (clarsimp simp add: agrees_def)
