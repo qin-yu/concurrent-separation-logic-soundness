@@ -442,8 +442,8 @@ apply (case_tac C1, simp_all split: if_split_asm, (fastforce simp add: agrees_de
 apply (case_tac[1-5] C1a, simp_all split: if_split_asm, (fastforce intro: agrees_refl)+)
 apply (case_tac[!] C1, simp_all split: if_split_asm)
 apply (tactic {* TRYALL (clarify_tac @{context}) *}, simp_all add: disjoint_minus [THEN sym])
-apply (fastforce simp add: agrees_def intro: ext)+
-apply (intro exI conjI, rule_tac v=v in red_Alloc, (fastforce simp add: agrees_def intro:ext)+)
+apply (fastforce simp add: agrees_def)+
+apply (intro exI conjI, rule_tac v=v in red_Alloc, (fastforce simp add: agrees_def)+)
 done
 
 lemma aborts_remvars:
