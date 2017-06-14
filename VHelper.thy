@@ -129,6 +129,8 @@ lemma agrees_simps[simp]:
   "agrees (insert x X) s s' = (s x = s' x \<and> agrees X s s')"
   "agrees (X \<union> Y) s s' = (agrees X s s' \<and> agrees Y s s')"
 unfolding agrees_def by auto
+    
+thm agrees_def
 
 lemma agrees_refl: "agrees X s s"
 by (simp add: agrees_def)
@@ -136,6 +138,8 @@ by (simp add: agrees_def)
 lemma agreesC: 
   "agrees X x y = agrees X y x"
 unfolding agrees_def by auto
+    
+thm agrees_def
 
 lemma agrees_search[elim]: 
   "agrees X x y \<Longrightarrow> agrees X y x"

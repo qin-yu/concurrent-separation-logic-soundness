@@ -2,3 +2,7 @@
 Lang.thy~
 
 VHelper.thy~
+
+*.thy~
+
+*.thy#
