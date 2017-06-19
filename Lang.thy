@@ -483,7 +483,6 @@ by auto
 
 lemma bexp_agrees_help2: "\<forall>x\<in>(fvE E1 \<union> fvE E2). s x = s' x \<Longrightarrow> \<forall>x\<in>fvE E1. s x = s' x"
 by auto
-*)
 
 lemma bexp_agrees_pre: "\<forall>x\<in>fvE E1 \<union> fvE E2. s x = s' x \<Longrightarrow> edenot E1 s = edenot E2 s'"
 proof -
@@ -492,6 +491,13 @@ proof -
   thus "\<forall>x\<in>fvE E1 \<union> fvE E2. s x = s' x \<Longrightarrow> edenot E1 s = edenot E2 s'" by (induction rule: exp.induct, auto)
   (* The content in by() is showing purple highlight which means its nontermination *)
 qed
+*)
+
+(* Dr J.B.:*)
+lemma bexp_agrees: "agrees (fvB B) s s' \<Longrightarrow> bdenot B s = bdenot B s'"
+apply (induct B)
+apply (auto)
+apply (simp_all add: exp_agrees)
 
 lemma bexp_agrees: "agrees (fvB B) s s' \<Longrightarrow> bdenot B s = bdenot B s'"
 apply (simp add: agrees_def)
