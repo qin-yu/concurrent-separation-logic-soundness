@@ -470,40 +470,13 @@ by (erule red.induct, auto simp add: agrees_def)
 text {* Proposition 4.2: Semantics does not depend on variables not free in the term *}
 
 lemma exp_agrees: "agrees (fvE E) s s' \<Longrightarrow> edenot E s = edenot E s'"
-apply (simp add: agrees_def)
-apply (induct E)
-by auto
-(* by (simp add: agrees_def, induct E, auto) *)
-
-(* OK now the following proofs are test for the proofs in the lemma bexp_agrees_pre:
-
-lemma bexp_agrees_help: "\<forall>x\<in>(fvE E). s x = s' x \<Longrightarrow> edenot E s = edenot E s'"
-apply (induct E)
-by auto
-
-lemma bexp_agrees_help2: "\<forall>x\<in>(fvE E1 \<union> fvE E2). s x = s' x \<Longrightarrow> \<forall>x\<in>fvE E1. s x = s' x"
-by auto
-
-lemma bexp_agrees_pre: "\<forall>x\<in>fvE E1 \<union> fvE E2. s x = s' x \<Longrightarrow> edenot E1 s = edenot E2 s'"
-proof -
-  assume "\<forall>x\<in>fvE E1 \<union> fvE E2. s x = s' x"
-  hence "\<forall>x\<in>fvE E1 \<union> fvE E2. s x = s' x \<Longrightarrow> \<forall>x\<in>fvE E1. s x = s' x" by (auto)
-  thus "\<forall>x\<in>fvE E1 \<union> fvE E2. s x = s' x \<Longrightarrow> edenot E1 s = edenot E2 s'" by (induction rule: exp.induct, auto)
-  (* The content in by() is showing purple highlight which means its nontermination *)
-qed
-*)
+by (simp add: agrees_def, induct E, auto)
 
 (* Dr J.B.:*)
 lemma bexp_agrees: "agrees (fvB B) s s' \<Longrightarrow> bdenot B s = bdenot B s'"
 apply (induct B)
 apply (auto)
 apply (simp_all add: exp_agrees)
-
-lemma bexp_agrees: "agrees (fvB B) s s' \<Longrightarrow> bdenot B s = bdenot B s'"
-apply (simp add: agrees_def)
-apply (induct B)
-apply (auto)
-apply (simp_all add: bexp_agrees_pre)
 done
 
 lemma accesses_agrees: "agrees (fvC C) s s' \<Longrightarrow> accesses C s = accesses C s'"
