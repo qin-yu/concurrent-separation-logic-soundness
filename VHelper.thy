@@ -161,7 +161,7 @@ lemma removeAllC: "removeAll y (removeAll x z) = removeAll x (removeAll y z)"
 by (induct z, auto)
 
 lemma remove1_removeAll: "remove1 y (removeAll x z) = removeAll x (remove1 y z)"
-by (induct z, auto, induct_tac z, auto)
+by (induct z, auto, simp add: remove1_idem)
 
 lemma list_minus_removeAll: "list_minus (removeAll a x) y = removeAll a (list_minus x y)" 
 by (induct y, simp_all add: removeAllC)
