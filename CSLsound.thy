@@ -47,16 +47,19 @@ definition
 where
   "P \<sqsubseteq> Q \<equiv> (\<forall>\<sigma>. \<sigma> \<Turnstile> P \<longrightarrow> \<sigma> \<Turnstile> Q)"
 
+declare hsimps [simp]
 lemma sat_istar_map_expand:
   "\<lbrakk> r \<in> set l \<rbrakk> \<Longrightarrow>  
      \<sigma> \<Turnstile> Aistar (map f l)
      \<longleftrightarrow> (\<exists>h1 h2. (fst \<sigma>, h1) \<Turnstile> f r
               \<and> (fst \<sigma>, h2) \<Turnstile> Aistar (map f (remove1 r l))
               \<and> snd \<sigma> = (h1 ++ h2) \<and> disjoint (dom h1) (dom h2))" 
-apply (case_tac \<sigma>, rename_tac s h, clarify)
-apply (induct l, simp_all, clarsimp, safe)
-apply (intro exI conjI, (simp add: hsimps)+)+
+apply (case_tac \<sigma>, rename_tac s h)
+apply (induct l)
+apply (auto)
+apply (intro exI conjI, auto)+
 done
+declare hsimps [simp del]
 
 subsubsection {* Precision *}
 
