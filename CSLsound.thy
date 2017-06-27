@@ -259,11 +259,10 @@ lemma safe_agrees:
      agrees (fvC C \<union> fvA Q \<union> fvAs \<Gamma>) s s' \<rbrakk>
    \<Longrightarrow> safe n C s' h \<Gamma> Q"
 apply (induct n arbitrary: C s s' h bl, simp, simp only: safe.simps, clarify)
-apply (rule conjI, thin_tac "\<forall>x y z. ?P x y z", clarsimp, subst assn_agrees, subst agreesC, assumption+)
-apply (rule conjI, thin_tac "\<forall>x y z. ?P x y z", clarsimp)
+apply (rule conjI, clarsimp, subst assn_agrees, subst agreesC, assumption+)
+apply (rule conjI, clarsimp)
  apply (drule_tac aborts_agrees, simp, fast, simp, simp)
 apply (rule conjI, subst (asm) accesses_agrees, simp_all)
-apply (thin_tac "\<forall>x. ?P x \<longrightarrow> ?Q x")
 apply (clarify, drule_tac X="fvC C \<union> fvAs \<Gamma> \<union> fvA Q" in red_agrees, 
        simp (no_asm), fast, simp (no_asm), fast, clarify)
 apply (drule (1) all5_impD, clarsimp)
@@ -318,7 +317,7 @@ apply (rule conjI, erule order_trans, simp)+
   apply (drule mall3_imp2D, erule_tac[3] mimp3D, simp_all add: hsimps)
   apply (rule_tac s="s" in safe_agrees)
   apply (rule_tac n="Suc n" in safe_mon, simp add: hsimps, simp)
-  apply (fastsimp simp add: agreesC disjoint_commute)
+  apply (fastforce simp add: agreesC disjoint_commute)
   apply (intro conjI | erule (1) disjoint_search)+
  -- {* C2 does a step *}
   apply (clarify, drule_tac a="hJ" and b="h1 ++ hF" in all2D, drule all3_imp2D, 
@@ -329,7 +328,7 @@ apply (rule conjI, erule order_trans, simp)+
   apply (drule mall3_imp2D, erule_tac[3] mimp3D, simp_all add: hsimps)
   apply (rule_tac s="s" in safe_agrees)
    apply (rule_tac n="Suc n" in safe_mon, simp add: hsimps, simp)
-  apply (subst agreesC, fastsimp, fastsimp, fastsimp)
+  apply (subst agreesC, fastforce, fastforce, fastforce)
   -- {* Par skip skip *} 
   apply (clarify)
   apply (rule_tac x="h1 ++ h2" in exI, rule_tac x="hJ" in exI, simp add: hsimps)
@@ -358,11 +357,9 @@ apply (rule conjI, clarify)
  -- {* accesses *}
  apply (rule conjI, erule order_trans, simp)
  -- {* step *}
- apply (thin_tac "\<forall>x. ?P x \<longrightarrow> ?Q x")
  apply (clarify, frule red_properties, clarsimp)
  apply (erule red.cases, simp_all, clarsimp, rename_tac C s C' s' hh)
  -- {* normal step *}
-  apply (thin_tac "?C = Cskip \<longrightarrow> ?Q")
   apply (case_tac "r \<in> set (llocked C')", simp_all add: locked_eq)
    apply (drule_tac a="hJ ++ hR" and b="hF" and c=C' and d=s' and e=hh in all5D, simp add: hsimps)
    apply (drule impD)
@@ -513,7 +510,7 @@ apply (intro conjI allI impI notI, erule aborts.cases, simp_all)
 apply (elim conjE, erule red.cases, simp_all)
 apply (clarsimp, intro exI, (rule conjI, simp)+)
 apply (subgoal_tac "\<forall>m s h. m \<le> n \<and> (s, h) \<Turnstile> P \<longrightarrow> safe m (Cwhile B C) s h \<Gamma> (Aconj P (Apure (Bnot B)))")
- apply (thin_tac "\<And>x y. ?P x y \<Longrightarrow> ?Q x y", case_tac n, simp, clarsimp)
+ apply (case_tac n, simp, clarsimp)
  apply (intro conjI allI impI notI, erule aborts.cases, simp_all)
  apply (elim conjE, erule red.cases, simp_all)
   apply (clarsimp, intro exI, (rule conjI, simp)+)
@@ -672,7 +669,7 @@ apply (clarsimp, drule (2) all5_imp2D, clarsimp)
 apply (intro exI conjI, simp+)
 apply (fastforce simp add: disjoint_commute agreesC)
 apply (drule (1) mall3_imp2D, fast) 
-apply (erule safe_agrees, fastsimp simp add: disjoint_commute agreesC)
+apply (erule safe_agrees, fastforce simp add: disjoint_commute agreesC)
 done
 
 text {* The proof rule for eliminating auxiliary variables. Note that a
