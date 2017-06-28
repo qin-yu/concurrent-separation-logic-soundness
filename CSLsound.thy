@@ -52,11 +52,21 @@ lemma sat_istar_map_expand:
      \<sigma> \<Turnstile> Aistar (map f l)
      \<longleftrightarrow> (\<exists>h1 h2. (fst \<sigma>, h1) \<Turnstile> f r
               \<and> (fst \<sigma>, h2) \<Turnstile> Aistar (map f (remove1 r l))
-              \<and> snd \<sigma> = (h1 ++ h2) \<and> disjoint (dom h1) (dom h2))" 
-apply (case_tac \<sigma>, rename_tac s h, clarify)
-apply (induct l, simp_all, clarsimp, safe)
-apply (intro exI conjI, (simp add: hsimps)+)+
-done
+              \<and> snd \<sigma> = (h1 ++ h2)
+              \<and> disjoint (dom h1) (dom h2))" 
+apply (case_tac \<sigma>, rename_tac s h, simp)
+apply (induct l)
+apply (simp)
+apply (simp)
+apply (auto)
+
+
+apply (intro exI conjI)
+apply (simp add: hsimps)
+
+
+
+
 
 subsubsection {* Precision *}
 
