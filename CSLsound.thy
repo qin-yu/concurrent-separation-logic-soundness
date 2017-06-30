@@ -56,17 +56,8 @@ lemma sat_istar_map_expand:
               \<and> disjoint (dom h1) (dom h2))" 
 apply (case_tac \<sigma>, rename_tac s h, simp)
 apply (induct l)
-apply (simp)
-apply (simp)
 apply (auto)
-
-
-apply (intro exI conjI)
-apply (simp add: hsimps)
-
-
-
-
+sorry
 
 subsubsection {* Precision *}
 
@@ -109,6 +100,14 @@ definition
 where
   "envs \<Gamma> l l' \<equiv> Aistar (map \<Gamma> (list_minus l l'))"
 
+thm sat_istar_map_expand
+(*
+?r \<in> set ?l \<Longrightarrow> 
+                ?\<sigma> \<Turnstile> Aistar (map ?f ?l) 
+                    = (\<exists>h1 h2. (fst ?\<sigma>, h1) \<Turnstile> ?f ?r 
+                             \<and> (fst ?\<sigma>, h2) \<Turnstile> Aistar (map ?f (remove1 ?r ?l)) 
+                             \<and> snd ?\<sigma> = h1 ++ h2 \<and> disjoint (dom h1) (dom h2))
+*)
 lemma sat_envs_expand:
   "\<lbrakk> r \<in> set l; r \<notin> set l'; distinct l \<rbrakk> \<Longrightarrow>  
      \<sigma> \<Turnstile> envs \<Gamma> l l' 
@@ -116,8 +115,22 @@ lemma sat_envs_expand:
               \<and> (fst \<sigma>, h2) \<Turnstile> envs \<Gamma> (removeAll r l) l'
               \<and> snd \<sigma> = h1 ++ h2 \<and> disjoint (dom h1) (dom h2))" 
 apply (simp add: envs_def distinct_remove1_removeAll [THEN sym] add: list_minus_remove1)
+(* 
+1. \<lbrakk>r \<in> set l; r \<notin> set l'; distinct l\<rbrakk> \<Longrightarrow> 
+          \<sigma> \<Turnstile> Aistar (map \<Gamma> (list_minus l l')) 
+             = (\<exists>h1. (fst \<sigma>, h1) \<Turnstile> \<Gamma> r 
+             \<and> (\<exists>h2. (fst \<sigma>, h2) \<Turnstile> Aistar (map \<Gamma> (remove1 r (list_minus l l'))) 
+             \<and> snd \<sigma> = h1 ++ h2 \<and> disjoint (dom h1) (dom h2)))*)
 apply (subst sat_istar_map_expand [where f=\<Gamma> and r=r], simp_all)
 done
+(*
+theorem sat_envs_expand: 
+\<lbrakk>?r \<in> set ?l; ?r \<notin> set ?l'; distinct ?l\<rbrakk> 
+\<Longrightarrow> 
+?\<sigma> \<Turnstile> envs ?\<Gamma> ?l ?l' = (\<exists>h1 h2. (fst ?\<sigma>, h1) \<Turnstile> ?\<Gamma> ?r 
+                              \<and> (fst ?\<sigma>, h2) \<Turnstile> envs ?\<Gamma> (removeAll ?r ?l) ?l' 
+                              \<and> snd ?\<sigma> = h1 ++ h2 \<and> disjoint (dom h1) (dom h2))
+*)
 
 lemma envs_upd:
   "r \<notin> set l \<Longrightarrow> envs (\<Gamma>(r := R)) l l' = envs \<Gamma> l l'"
@@ -373,6 +386,41 @@ apply (rule conjI, clarify)
   apply (case_tac "r \<in> set (llocked C')", simp_all add: locked_eq)
    apply (drule_tac a="hJ ++ hR" and b="hF" and c=C' and d=s' and e=hh in all5D, simp add: hsimps)
    apply (drule impD)
+    (*  \<Gamma>="\<Gamma>(r := R)" and r=r and l'="llocked C" and l="llocked C'"  *)
+
+(* 
+1. \<And>n h hR hJ hF C s C' s' hh.
+       \<lbrakk>\<And>C s h. \<lbrakk>safe n C s h (\<Gamma>(r := R)) Q; wf_cmd C; disjoint (fvA R) (wrC C)\<rbrakk>
+                 \<Longrightarrow> 
+                (r \<notin> set (llocked C) \<longrightarrow> 
+                    (\<forall>hR. disjoint (dom h) (dom hR) \<longrightarrow> 
+                        (s, hR) \<Turnstile> R \<longrightarrow> 
+                            safe n (Cresource r C) s (h ++ hR) \<Gamma> (Q ** R))) \<and> (r \<in> set (llocked C) \<longrightarrow>
+                                safe n (Cresource r C) s h \<Gamma> (Q ** R));
+        wf_cmd C; 
+        disjoint (fvA R) (wrC C); 
+        \<forall>hF. disjoint (dom h) (dom hF) \<longrightarrow> \<not> aborts C (s, h ++ hF); 
+        accesses C s \<subseteq> dom h; 
+        r \<notin> set (llocked C); 
+        disjoint (dom h) (dom hR); 
+        (s, hR) \<Turnstile> R;
+        (s, hJ) \<Turnstile> envs \<Gamma> (removeAll r (llocked C')) (llocked C); 
+        disjoint (dom hR) (dom hJ); disjoint (dom h) (dom hJ); disjoint (dom hR) (dom hF); 
+        disjoint (dom h) (dom hF); disjoint (dom hJ) (dom hF); 
+        fvC C' \<subseteq> fvC C;
+        wrC C' \<subseteq> wrC C; 
+        agrees (- wrC C) s' s; 
+        red C (s, h ++ (hR ++ (hJ ++ hF))) C' (s', hh); 
+        r \<in> set (llocked C');
+        (s, hR ++ hJ) \<Turnstile> envs (\<Gamma>(r := R)) (llocked C') (llocked C) \<longrightarrow>
+            (\<exists>h' hJ'. hh = h' ++ (hJ' ++ hF) 
+                    \<and> disjoint (dom h') (dom hJ') \<and> disjoint (dom hF) (dom h') \<and> disjoint (dom hF) (dom hJ') 
+                    \<and> (s', hJ') \<Turnstile> envs (\<Gamma>(r := R)) (llocked C) (llocked C') 
+                    \<and> safe n C' s' h' (\<Gamma>(r := R)) Q)
+        \<rbrakk>
+       \<Longrightarrow> C = Cskip
+*)
+    defer
     apply (subst sat_envs_expand [where r=r], simp_all)
      apply (rule wf_cmd_distinct_locked, erule (1) red_wf_cmd)
     apply (intro exI conjI, simp, simp_all add: envs_upd)
