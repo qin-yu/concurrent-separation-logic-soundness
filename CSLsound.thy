@@ -47,6 +47,107 @@ definition
 where
   "P \<sqsubseteq> Q \<equiv> (\<forall>\<sigma>. \<sigma> \<Turnstile> P \<longrightarrow> \<sigma> \<Turnstile> Q)"
 
+lemma [simp]:"\<lbrakk> h = h1 ++ h2; h2 = h1a ++ h2a; 
+          disjoint (dom h1) (dom h2); disjoint (dom h1a) (dom h2a) \<rbrakk> \<Longrightarrow> 
+                h = h1a ++ (h1 ++ h2a) \<and> disjoint (dom h1a) (dom (h1 ++ h2a))"
+by (simp add: disjoint_search(1) map_add_left_commute)
+
+lemma sep_conj_commute: "(s, h) \<Turnstile> P ** Q = (s, h) \<Turnstile> Q ** P"
+apply auto
+apply (intro exI, auto)+
+apply (simp add: map_add_commute)
+apply (intro exI, auto)+
+apply (simp add: map_add_commute)
+done
+
+lemma reassemble_aistar1: "\<lbrakk> r \<in> set l; \<sigma> \<Turnstile> r ** (Aistar (remove1 r l)) \<rbrakk> \<Longrightarrow> \<sigma> \<Turnstile> Aistar (r # (remove1 r l))"
+by auto
+
+lemma "r \<in> set l \<Longrightarrow> \<sigma> \<Turnstile> Aistar (r # (remove1 r l)) = \<sigma> \<Turnstile> Aistar l"
+apply (case_tac \<sigma>, rename_tac s h, simp)
+apply (induct l, simp)
+apply auto
+sorry
+
+lemma reassemble_aistar2: "\<lbrakk> r \<in> set l; \<sigma> \<Turnstile> r ** (Aistar (remove1 r l)) \<rbrakk> \<Longrightarrow> \<sigma> \<Turnstile> Aistar l"
+sorry
+
+lemma "\<lbrakk> l \<noteq> []; r \<in> set l; a \<notin> set l \<rbrakk> \<Longrightarrow> set (remove1 r (a#l)) = set (a#(remove1 r l))"
+(* assume that: equivalent elements have distinct identity. *)
+by auto
+
+lemma "a = 1 \<and> r \<notin> set [1, 2, 3] \<and> r \<in> set (a#[1, 2, 3])"
+sorry
+(* Check if Isabelle understands the previous concept, distinct identity, using this:
+*)
+
+lemma [simp]: "Aistar (remove1 r (a#l)) = Aistar (a#(remove1 r l))"
+apply (auto simp add: sep_conj_commute)
+apply (induct l)
+apply auto
+done
+
+(*lemma "\<lbrakk> (s, h1)  \<Turnstile> a;
+         (s, h2a) \<Turnstile> Aistar l;
+         disjoint (dom h1) (dom h2a) \<rbrakk> \<Longrightarrow>
+                (s, (h1 ++ h2a)) \<Turnstile> Aistar (a # l)"
+by auto*)
+
+(*lemma "\<lbrakk> r \<in> set l; r \<noteq> a \<rbrakk> \<Longrightarrow> remove1 r (a#l) = a#(remove1 r l)"
+by simp*)
+
+
+
+lemma [simp]: "\<lbrakk> r \<in> set l; r \<noteq> a;
+         (s, h1)  \<Turnstile> a;
+         (s, h2a) \<Turnstile> Aistar (remove1 r l);
+         disjoint (dom h1) (dom h2a) \<rbrakk> \<Longrightarrow>
+                (s, (h1 ++ h2a)) \<Turnstile> Aistar (remove1 r (a # l))"
+by auto
+
+value "remove1 1 ( [1,1,1,2])"
+
+lemma pre_sat_istar_map_expand:
+  "\<lbrakk> r \<in> set l \<rbrakk> \<Longrightarrow>  \<sigma> \<Turnstile> Aistar l \<longleftrightarrow> (\<exists>h1 h2. (fst \<sigma>, h1) \<Turnstile> r
+                                              \<and> (fst \<sigma>, h2) \<Turnstile> Aistar (remove1 r l)
+                                              \<and> snd \<sigma> = (h1 ++ h2)
+                                              \<and> disjoint (dom h1) (dom h2))" 
+apply (case_tac \<sigma>, rename_tac s h, simp)
+apply (induct l)
+apply (auto)
+prefer 2
+apply (intro exI)
+apply (auto)
+apply (rule_tac x="h1++h2a" in exI)
+apply (auto)
+apply (rule reassemble_aistar2, auto)
+apply (rule_tac x="empty" in exI, auto)
+prefer 2
+apply (intro exI conjI, auto)
+
+done
+
+thm exI
+lemma "\<lbrakk> (s, h1 ++ h2) \<Turnstile> Aistar l; r \<in> set l \<rbrakk> \<Longrightarrow> \<exists>h1a h2a. (s, h1a) \<Turnstile> r \<and> (s, h2a) \<Turnstile> Aistar (remove r l) \<and> h1 ++ h2 = h1a ++ h2a"
+apply (auto)
+apply (intro exI conjI)
+apply (auto)
+
+thm exE
+lemma "\<lbrakk> \<exists>h1 h2. (s, h) \<Turnstile> Aistar l =  (s, h1) \<Turnstile> f r 
+                                    \<and> (s, h2) \<Turnstile> Aistar (remove1 r l) 
+                                    \<and> h = h1 ++ h2 
+                                    \<and> disjoint (dom h1) (dom h2);
+        r \<in> set l; 
+        (s, h1) \<Turnstile> r; 
+        (s, h2) \<Turnstile> Aistar (remove r l) \<rbrakk> \<Longrightarrow> (s, (h1 ++ h2)) \<Turnstile> Aistar l"
+apply (erule exE)
+apply (erule exE)
+apply (auto)
+done
+
+thm hsimps
+(*declare hsimps [simp]*)
 lemma sat_istar_map_expand:
   "\<lbrakk> r \<in> set l \<rbrakk> \<Longrightarrow>  
      \<sigma> \<Turnstile> Aistar (map f l)
@@ -56,17 +157,14 @@ lemma sat_istar_map_expand:
               \<and> disjoint (dom h1) (dom h2))" 
 apply (case_tac \<sigma>, rename_tac s h, simp)
 apply (induct l)
-apply (simp)
-apply (simp)
 apply (auto)
-
-
-apply (intro exI conjI)
-apply (simp add: hsimps)
-
-
-
-
+prefer 2
+apply (intro exI)
+apply (auto)
+apply (rule_tac x="h1++h2a" in exI)
+apply (auto)
+sorry
+(*declare hsimps [simp del]*)
 
 subsubsection {* Precision *}
 
@@ -354,6 +452,7 @@ by (auto simp add: CSL_def intro!: safe_par)
 
 subsubsection {* Resource declaration *}
 
+thm sat_envs_expand
 lemma safe_resource:
  "\<lbrakk> safe n C s h (\<Gamma>(r := R)) Q; wf_cmd C; disjoint (fvA R) (wrC C) \<rbrakk> \<Longrightarrow>
      (\<forall>hR. r \<notin> locked C \<longrightarrow> disjoint (dom h) (dom hR) \<longrightarrow> (s,hR) \<Turnstile> R \<longrightarrow> safe n (Cresource r C) s (h ++ hR) \<Gamma> (Q ** R))
@@ -373,7 +472,7 @@ apply (rule conjI, clarify)
   apply (case_tac "r \<in> set (llocked C')", simp_all add: locked_eq)
    apply (drule_tac a="hJ ++ hR" and b="hF" and c=C' and d=s' and e=hh in all5D, simp add: hsimps)
    apply (drule impD)
-    apply (subst sat_envs_expand [where r=r], simp_all)
+    apply (subst sat_envs_expand [where r=r and l'="llocked C" and l="llocked C'"], simp_all)
      apply (rule wf_cmd_distinct_locked, erule (1) red_wf_cmd)
     apply (intro exI conjI, simp, simp_all add: envs_upd)
    apply (clarsimp simp add: envs_removeAll_irr) 
