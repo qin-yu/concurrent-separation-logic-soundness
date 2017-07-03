@@ -47,17 +47,86 @@ definition
 where
   "P \<sqsubseteq> Q \<equiv> (\<forall>\<sigma>. \<sigma> \<Turnstile> P \<longrightarrow> \<sigma> \<Turnstile> Q)"
 
+lemma sat_resemble: "(\<sigma> \<Turnstile> P ** Q) \<longleftrightarrow> (\<exists>h1 h2. (fst \<sigma>, h1) \<Turnstile> P \<and> (fst \<sigma>, h2) \<Turnstile> Q \<and> snd \<sigma> = (h1 ++ h2) \<and> disjoint (dom h1) (dom h2))"
+by auto
+
+lemma sat_PQ_commute: "\<sigma> \<Turnstile> P ** Q \<longleftrightarrow> \<sigma> \<Turnstile> Q ** P"
+apply auto
+apply (rule_tac x="h2" in exI, simp, rule_tac x="h1" in exI, simp add: hsimps)+
+done
+
+lemma sat_PQR_commute: "\<sigma> \<Turnstile> P ** (Q ** R) \<longleftrightarrow> \<sigma> \<Turnstile> Q ** (P ** R)"
+apply (auto)
+apply (rule_tac x="h1a" in exI, simp add: hsimps)
+apply (rule_tac x="h1 ++ h2a" in exI, simp add: hsimps)
+apply (rule_tac x="h1" in exI, simp add: hsimps)
+apply (rule_tac x="h2a" in exI, simp add: hsimps)
+apply (rule_tac x="h1a" in exI, simp add: hsimps)
+apply (rule_tac x="h1 ++ h2a" in exI, simp add: hsimps)
+apply (rule_tac x="h1" in exI, simp add: hsimps)
+apply (rule_tac x="h2a" in exI, simp add: hsimps)
+done
+
+lemma sat_PQL_commute: "\<sigma> \<Turnstile> P ** (Q ** Aistar (map f l)) \<longleftrightarrow> \<sigma> \<Turnstile> Q ** (P ** Aistar (map f l))"
+by (rule sat_PQR_commute)
+
+lemma set_testing: "\<lbrakk> r \<in> set l \<rbrakk> \<Longrightarrow> set l = set (r # (remove1 r l))"
+by (induct l, auto)
+
+lemma set_testing2: "\<lbrakk> r \<in> set l \<rbrakk> \<Longrightarrow> set (r # (remove1 r l)) = set l"
+by (induct l, auto)
+
+lemma set_testing3: "\<lbrakk> r \<in> set l \<rbrakk> \<Longrightarrow> set (r # (remove1 r (a#l))) = set (a#l)"
+apply (induct l)
+apply simp
+(*apply force*)
+apply (rule_tac l="a # aa # l" in set_testing2)
+apply auto
+done
+
+lemma set_testing4: "\<lbrakk> r \<in> set l \<rbrakk> \<Longrightarrow> set (a # (remove1 r l)) = set (remove1 r (a#l))"
+apply (induct l)
+apply simp
+by force
+
+lemma set_testing5: "\<lbrakk> r \<in> set l \<rbrakk> \<Longrightarrow> Aistar (a # (remove1 r l)) = Aistar (remove1 r (a#l))"
+apply (induct l)
+apply simp
+sorry
+
+lemma sat_resemble2: "\<lbrakk> r \<in> set l \<rbrakk> \<Longrightarrow> Aistar l = r ** Aistar (remove1 r l)"
+apply (induct l)
+apply simp
+apply (simp (no_asm))
+sorry
+
+lemma sat_resemble3: "\<lbrakk> r \<in> set l \<rbrakk> \<Longrightarrow> \<sigma> \<Turnstile> Aistar l \<longleftrightarrow> \<sigma> \<Turnstile> r ** Aistar (remove1 r l)"
+apply (induct l)
+apply (simp)
+apply (safe)
+using [[simp_trace=true]]
+apply (simp)
+using [[simp_trace=false]]
+apply clarsimp
+apply (rule_tac x="h1a" in exI, simp add: hsimps)
+apply (rule_tac x="h1 ++ h2a" in exI, simp add: hsimps)
+apply (rule conjI)
+apply (rule_tac x="h1" in exI, simp add: hsimps)
+apply (rule_tac x="h2a" in exI, simp add: hsimps)
+sorry
+
 lemma sat_istar_map_expand:
   "\<lbrakk> r \<in> set l \<rbrakk> \<Longrightarrow>  
      \<sigma> \<Turnstile> Aistar (map f l)
      \<longleftrightarrow> (\<exists>h1 h2. (fst \<sigma>, h1) \<Turnstile> f r
               \<and> (fst \<sigma>, h2) \<Turnstile> Aistar (map f (remove1 r l))
               \<and> snd \<sigma> = (h1 ++ h2)
-              \<and> disjoint (dom h1) (dom h2))" 
-apply (case_tac \<sigma>, rename_tac s h, simp)
-apply (induct l)
-apply (auto)
+              \<and> disjoint (dom h1) (dom h2))"
+apply (case_tac \<sigma>, rename_tac s h, clarify)
+apply (induct l, auto)
+apply (rule exI conjI, auto)+
 sorry
+value "r \<in> set []"
 
 subsubsection {* Precision *}
 
