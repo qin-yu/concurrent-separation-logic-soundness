@@ -47,26 +47,6 @@ definition
 where
   "P \<sqsubseteq> Q \<equiv> (\<forall>\<sigma>. \<sigma> \<Turnstile> P \<longrightarrow> \<sigma> \<Turnstile> Q)"
 
-lemma sat_resemble: "(\<sigma> \<Turnstile> P ** Q) \<longleftrightarrow> (\<exists>h1 h2. (fst \<sigma>, h1) \<Turnstile> P \<and> (fst \<sigma>, h2) \<Turnstile> Q \<and> snd \<sigma> = (h1 ++ h2) \<and> disjoint (dom h1) (dom h2))"
-by auto
-
-lemma sat_PQ_commute: "\<sigma> \<Turnstile> P ** Q \<longleftrightarrow> \<sigma> \<Turnstile> Q ** P"
-apply auto
-apply (rule_tac x="h2" in exI, simp, rule_tac x="h1" in exI, simp add: hsimps)+
-done
-
-lemma sat_PQR_commute: "\<sigma> \<Turnstile> P ** (Q ** R) \<longleftrightarrow> \<sigma> \<Turnstile> Q ** (P ** R)"
-apply (auto)
-apply (rule_tac x="h1a" in exI, simp add: hsimps)
-apply (rule_tac x="h1 ++ h2a" in exI, simp add: hsimps)
-apply (rule_tac x="h1" in exI, simp add: hsimps)
-apply (rule_tac x="h2a" in exI, simp add: hsimps)
-apply (rule_tac x="h1a" in exI, simp add: hsimps)
-apply (rule_tac x="h1 ++ h2a" in exI, simp add: hsimps)
-apply (rule_tac x="h1" in exI, simp add: hsimps)
-apply (rule_tac x="h2a" in exI, simp add: hsimps)
-done
-
 lemma sat_istar_map_expand:
   "\<lbrakk> r \<in> set l \<rbrakk> \<Longrightarrow>  
      \<sigma> \<Turnstile> Aistar (map f l)
@@ -75,16 +55,8 @@ lemma sat_istar_map_expand:
               \<and> snd \<sigma> = (h1 ++ h2)
               \<and> disjoint (dom h1) (dom h2))"
 apply (case_tac \<sigma>, rename_tac s h, clarify)
-apply (induction l arbitrary: \<sigma>)
-apply auto
-apply (rule_tac x="h1a" in exI, simp add: hsimps)
-apply (rule_tac x="h1++h2a" in exI, simp add: hsimps)
-apply (rule_tac x="h1" in exI, simp add: hsimps)
-apply (rule_tac x="h2a" in exI, simp add: hsimps)
-apply (rule_tac x="h1a" in exI, simp add: hsimps)
-apply (rule_tac x="h1++h2a" in exI, simp add: hsimps)
-apply (rule_tac x="h1" in exI, simp add: hsimps)
-apply (rule_tac x="h2a" in exI, simp add: hsimps)
+apply (induction l arbitrary: \<sigma>, auto)
+apply (intro exI conjI, (simp add: hsimps)+)+
 done
 
 subsubsection {* Precision *}
@@ -448,7 +420,6 @@ apply (rule conjI, clarify)
         \<rbrakk>
        \<Longrightarrow> C = Cskip
 *)
-    defer
     apply (subst sat_envs_expand [where r=r], simp_all)
      apply (rule wf_cmd_distinct_locked, erule (1) red_wf_cmd)
     apply (intro exI conjI, simp, simp_all add: envs_upd)
@@ -562,7 +533,7 @@ apply (rule conjI, clarsimp)
  apply (erule aborts.cases, simp_all, clarsimp)
 apply (clarsimp, erule red.cases, simp_all)
  -- {* Seq1 *}
- apply (clarify, rule_tac x="h" and y="hJ" in ex2I, simp add: user_cmd_llocked)
+ apply (clarify, rule_tac x="h" and y="hJ" in ex2I, simp)
 -- {* Seq2 *}
 apply (clarify, drule (1) all5_impD, clarsimp) 
 apply (drule (1) mall3_impD, rule_tac x="h'" and y="hJ'" in ex2I, simp)
