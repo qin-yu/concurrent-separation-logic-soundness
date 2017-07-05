@@ -386,40 +386,6 @@ apply (rule conjI, clarify)
   apply (case_tac "r \<in> set (llocked C')", simp_all add: locked_eq)
    apply (drule_tac a="hJ ++ hR" and b="hF" and c=C' and d=s' and e=hh in all5D, simp add: hsimps)
    apply (drule impD)
-    (*  \<Gamma>="\<Gamma>(r := R)" and r=r and l'="llocked C" and l="llocked C'"  *)
-
-(* 
-1. \<And>n h hR hJ hF C s C' s' hh.
-       \<lbrakk>\<And>C s h. \<lbrakk>safe n C s h (\<Gamma>(r := R)) Q; wf_cmd C; disjoint (fvA R) (wrC C)\<rbrakk>
-                 \<Longrightarrow> 
-                (r \<notin> set (llocked C) \<longrightarrow> 
-                    (\<forall>hR. disjoint (dom h) (dom hR) \<longrightarrow> 
-                        (s, hR) \<Turnstile> R \<longrightarrow> 
-                            safe n (Cresource r C) s (h ++ hR) \<Gamma> (Q ** R))) \<and> (r \<in> set (llocked C) \<longrightarrow>
-                                safe n (Cresource r C) s h \<Gamma> (Q ** R));
-        wf_cmd C; 
-        disjoint (fvA R) (wrC C); 
-        \<forall>hF. disjoint (dom h) (dom hF) \<longrightarrow> \<not> aborts C (s, h ++ hF); 
-        accesses C s \<subseteq> dom h; 
-        r \<notin> set (llocked C); 
-        disjoint (dom h) (dom hR); 
-        (s, hR) \<Turnstile> R;
-        (s, hJ) \<Turnstile> envs \<Gamma> (removeAll r (llocked C')) (llocked C); 
-        disjoint (dom hR) (dom hJ); disjoint (dom h) (dom hJ); disjoint (dom hR) (dom hF); 
-        disjoint (dom h) (dom hF); disjoint (dom hJ) (dom hF); 
-        fvC C' \<subseteq> fvC C;
-        wrC C' \<subseteq> wrC C; 
-        agrees (- wrC C) s' s; 
-        red C (s, h ++ (hR ++ (hJ ++ hF))) C' (s', hh); 
-        r \<in> set (llocked C');
-        (s, hR ++ hJ) \<Turnstile> envs (\<Gamma>(r := R)) (llocked C') (llocked C) \<longrightarrow>
-            (\<exists>h' hJ'. hh = h' ++ (hJ' ++ hF) 
-                    \<and> disjoint (dom h') (dom hJ') \<and> disjoint (dom hF) (dom h') \<and> disjoint (dom hF) (dom hJ') 
-                    \<and> (s', hJ') \<Turnstile> envs (\<Gamma>(r := R)) (llocked C) (llocked C') 
-                    \<and> safe n C' s' h' (\<Gamma>(r := R)) Q)
-        \<rbrakk>
-       \<Longrightarrow> C = Cskip
-*)
     apply (subst sat_envs_expand [where r=r], simp_all)
      apply (rule wf_cmd_distinct_locked, erule (1) red_wf_cmd)
     apply (intro exI conjI, simp, simp_all add: envs_upd)
@@ -434,14 +400,13 @@ apply (rule conjI, clarify)
   apply (drule mimpD, fast, clarsimp) 
   apply (rule_tac x="h' ++ hR" and y="hJ'" in ex2I, simp add: hsimps) 
   apply (drule_tac a=hR in all_imp2D, simp_all add: hsimps)
-  apply (subst assn_agrees, simp_all, fastsimp)
+  apply (subst assn_agrees, simp_all, fastforce)
  -- {* skip *}
  apply (clarsimp simp add: envs_def)
  apply (rule_tac x="h ++ hR" in exI, simp add: hsimps, rule safe_skip, simp, fast)
 -- {* not user cmd *}
 apply (clarsimp)
 apply (rule conjI, clarsimp, erule aborts.cases, simp_all, clarsimp, clarsimp)
-apply (thin_tac "?P \<longrightarrow> ?Q", thin_tac "\<forall>x. ?P x \<longrightarrow> ?Q x")
 apply (frule red_properties, clarsimp)
 apply (erule red.cases, simp_all, clarsimp, rename_tac C s C' s' hh)
 apply (drule_tac a="hJ" and b="hF" and c=C' and d=s' and e=hh in all5D, simp add: hsimps)
