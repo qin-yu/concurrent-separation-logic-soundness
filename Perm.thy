@@ -14,9 +14,8 @@ by (rule_tac x="0.5" in exI, simp)
 
 definition "pfull \<equiv> Abs_myfrac 1"        (*r Full permission *)
 
-types
-  pheap  = "(nat \<rightharpoonup> nat * myfrac)"       (*r Permission heaps *)
-  pstate = "stack \<times> pheap"               (*r Permission states *)
+type_synonym pheap  = "(nat \<rightharpoonup> nat * myfrac)"       (*r Permission heaps *)
+type_synonym pstate = "stack \<times> pheap"               (*r Permission states *)
 
 text {* Definition when two permission heaps are composable. *}
 
@@ -67,7 +66,7 @@ lemmas rat_simps =
   add_rat eq_rat one_rat zero_rat mult_rat le_rat minus_rat diff_rat
 
 lemmas frac_simps =
-  myfrac_def Rep_myfrac_inverse Rep_myfrac Abs_myfrac_inverse Abs_myfrac_inject
+  Rep_myfrac_inverse Rep_myfrac Abs_myfrac_inverse Abs_myfrac_inject
 
 lemma frac_contra[simp]: 
   "\<not> (Rep_myfrac pfull + Rep_myfrac b \<le> 1)"
@@ -93,7 +92,7 @@ lemma pdisj_upd: "h x = Some (w, pfull) \<Longrightarrow> pdisj (h(x \<mapsto> (
 by (simp add: pdisj_def, rule iff_allI, auto split: option.splits)
 
 lemma pdisj_comm: "pdisj h1 h2 = pdisj h2 h1"
-by (fastsimp split: option.splits simp add: pdisj_def)
+by (fastforce split: option.splits simp add: pdisj_def)
 
 lemma padd_empty[simp]:
   "padd x Map.empty = x"
@@ -101,7 +100,7 @@ lemma padd_empty[simp]:
 by (rule ext, clarsimp simp add: padd_def split: option.splits)+
 
 lemma padd_comm[simp]: "pdisj x y \<Longrightarrow> padd y x = padd x y"
-by (fastsimp split: option.splits simp add: padd_def pdisj_def algebra_simps intro!: ext)
+by (fastforce split: option.splits simp add: padd_def pdisj_def algebra_simps)
 
 lemma pdisj_padd: "\<lbrakk> pdisj y z ; pdisj x (padd y z) \<rbrakk> \<Longrightarrow> (pdisj x y \<and> pdisj x z)"
 apply (clarsimp simp add: pdisj_def padd_def all_conj_distrib [symmetric])
@@ -159,13 +158,13 @@ apply (case_tac b, case_tac ba, clarsimp simp add: frac_simps)
 done
 
 lemma dom_padd[simp]: "dom (padd x y) = dom x \<union> dom y"
-by (rule set_ext, simp add: padd_def dom_def split: option.splits)
+by (rule set_eqI, simp add: padd_def dom_def split: option.splits)
 
 lemma fpdom_padd[elim]:
   "pdisj h1 h2 \<Longrightarrow> fpdom h1 \<subseteq> fpdom (padd h1 h2)"
   "pdisj h1 h2 \<Longrightarrow> fpdom h2 \<subseteq> fpdom (padd h1 h2)"
 apply (auto simp add: fpdom_def pdisj_def padd_def disjoint_def split: option.splits)
-apply (drule_tac a=x in allD, fastsimp)+
+apply (drule_tac a=x in allD, fastforce)+
 done
 
 lemma pa_empty[simp]:
@@ -204,8 +203,9 @@ done
 
 lemma ptoD: "\<lbrakk> ptoheap x z; ptoheap y z \<rbrakk> \<Longrightarrow> x = y"
 apply (clarsimp simp add: ptoheap_def split: option.splits)
-apply (rule ext, rename_tac x, (drule_tac a=x in allD)+, auto)
-apply (case_tac "aa x", case_tac "a x", simp_all, fast+)
+apply (rule ext)
+apply ((drule_tac a=xa in allD)+, auto)
+apply (case_tac "x2a xa", case_tac "x2 xa", simp_all, fast+)
 done
 
 lemma pdisj_search1: 
@@ -224,12 +224,12 @@ lemma pdisj_search1:
   "ptoheap (z \<oplus> w \<oplus> Some x \<oplus> Some y \<oplus> v) hh \<Longrightarrow> pdisj x y"
   "ptoheap (z \<oplus> w \<oplus> Some x \<oplus> v \<oplus> Some y) hh \<Longrightarrow> pdisj x y"
 apply (simp_all add: ptoheap_def mypadd_def, case_tac[!] "pdisj x y", simp_all) 
-apply (auto split: option.splits split_if_asm elim: notE)
+apply (auto split: option.splits if_split_asm)
 apply (erule notE | fast | erule pdisjE [rotated])+
 done
 
 lemma pdisj_comm_implies: "pdisj h1 h2 \<Longrightarrow> pdisj h2 h1"
-by (fastsimp split: option.splits simp add: pdisj_def)
+by (fastforce split: option.splits simp add: pdisj_def)
 
 lemmas pdisj_search[elim] = 
   pdisj_search1 pdisj_search1[THEN pdisj_comm_implies]
@@ -291,7 +291,7 @@ lemma sat_istar_map_expand:
               \<and> (fst \<sigma>, h2) \<Turnstile> Aistar (map f (remove1 r l))
               \<and> snd \<sigma> = padd h1 h2 \<and> pdisj h1 h2)"
 apply (case_tac \<sigma>, rename_tac s h, clarify)
-apply (induct l, simp_all, clarsimp, safe)
+apply (induct l arbitrary: \<sigma>, simp_all, clarsimp, safe)
 apply (intro exI conjI, simp+)
  apply (drule pdisj_padd, simp, clarsimp)
 apply (rule padd_left_comm, simp_all)
@@ -508,12 +508,11 @@ lemma safe_agrees:
      agrees (fvC C \<union> fvA Q \<union> fvAs \<Gamma>) s s' \<rbrakk>
    \<Longrightarrow> safe n C s' h \<Gamma> Q"
 apply (induct n arbitrary: C s s' h bl, simp, simp only: safe.simps, clarify)
-apply (rule conjI, thin_tac "\<forall>x y z. ?P x y z", clarsimp, subst assn_agrees, subst agreesC, assumption+)
-apply (rule conjI, thin_tac "\<forall>x y z. ?P x y z", clarsimp)
+apply (rule conjI, clarsimp, subst assn_agrees, subst agreesC, assumption+)
+apply (rule conjI, clarsimp)
  apply (drule_tac aborts_agrees, simp, fast, simp, simp)
 apply (rule conjI, subst (asm) accesses_agrees, simp_all)
 apply (rule conjI, subst (asm) writes_agrees, simp_all)
-apply (thin_tac "\<forall>x y. ?P x y \<longrightarrow> ?Q x y")
 apply (clarify, drule_tac X="fvC C \<union> fvAs \<Gamma> \<union> fvA Q" in red_agrees, 
        simp (no_asm), fast, simp (no_asm), fast, clarify)
 apply (drule allD, drule (1) all5_impD, clarsimp)
@@ -541,7 +540,7 @@ subsubsection {* Parallel composition *}
 lemma disj_conv:
   "pdisj h1 h2 \<Longrightarrow> disjoint (fpdom h1) (dom h2)"
   "pdisj h1 h2 \<Longrightarrow> disjoint (dom h1) (fpdom h2)"
-by (simp add: fpdom_def pdisj_def disjoint_def, rule set_ext, drule_tac a=x in allD, clarsimp)+
+by (simp add: fpdom_def pdisj_def disjoint_def, rule set_eqI, drule_tac a=x in allD, clarsimp)+
 
 lemma safe_par:
  "\<lbrakk> safe n C1 s h1 J Q1; safe n C2 s h2 J Q2;
@@ -573,7 +572,7 @@ apply (rule conjI, erule order_trans, erule fpdom_padd)+
   apply (drule mall3_imp2D, erule_tac[3] mimp3D, simp_all add: hsimps)
   apply (rule_tac s="s" in safe_agrees)
   apply (rule_tac n="Suc n" in safe_mon, simp add: pa_ac, simp)
-  apply (fastsimp simp add: agreesC disjoint_commute)
+  apply (fastforce simp add: agreesC disjoint_commute)
   apply (intro conjI | erule (1) disjoint_search)+
  -- {* C2 does a step *}
   apply (clarify, drule_tac a="hJ" and b="Some h1 \<oplus> hF" in all2D, drule all4_imp2D, 
@@ -588,7 +587,7 @@ apply (rule conjI, erule order_trans, erule fpdom_padd)+
   apply (subst agreesC, bestsimp, bestsimp, bestsimp)
 -- {* Par skip skip *} 
 apply (clarify)
-apply (rule_tac x="padd h1 h2" and y="hJ" in ex2I, simp add: some_padd pa_ac)
+apply (rule_tac x="padd h1 h2" and y="hJ" in ex2I, simp add: pa_ac)
 apply (rule_tac safe_skip, simp, (rule exI, erule conjI)+, simp)
 done
 
@@ -615,17 +614,14 @@ apply (rule conjI, clarify)
  apply (rule conjI, erule order_trans, simp)
  apply (rule conjI, erule order_trans, erule fpdom_padd)
  -- {* step *}
- apply (thin_tac "\<forall>x y. ?P x y \<longrightarrow> ?Q x y")
  apply (clarify, frule red_properties, clarsimp)
  apply (erule red.cases, simp_all, clarsimp, rename_tac C s hh C' s' hh')
  -- {* normal step *}
-  apply (thin_tac "?C = Cskip \<longrightarrow> ?Q")
 apply (subgoal_tac "pdisj hR hJ", erule_tac[2] pdisj_search)
   apply (case_tac "r \<in> set (llocked C')", simp_all add: locked_eq)
    apply (drule_tac a="padd hJ hR" and b="hF" and c="hh" in all3D, 
           drule_tac a=C' and b=s' and c=hh' in all3D, simp_all add: pa_ac)
-   apply (drule impD)
-    apply (subst sat_envs_expand [where r=r], simp_all)
+   apply (drule impD, subst sat_envs_expand [where r=r], simp_all)
      apply (rule wf_cmd_distinct_locked, erule (1) red_wf_cmd)
     apply (intro exI conjI, simp, simp_all add: envs_upd)
    apply (clarsimp simp add: envs_removeAll_irr) 
@@ -641,14 +637,13 @@ apply (subgoal_tac "pdisj hR hJ", erule_tac[2] pdisj_search)
   apply (subgoal_tac "pdisj h' hR", erule_tac[2] pdisj_search)
   apply (rule_tac x="padd h' hR" and y="hJ'" in ex2I, simp add: pa_ac) 
   apply (drule_tac a=hR in all_imp2D, simp_all add: hsimps)
-  apply (subst assn_agrees, simp_all, fastsimp)
+  apply (subst assn_agrees, simp_all, fastforce)
  -- {* skip *}
  apply (clarsimp simp add: envs_def)
  apply (rule_tac x="padd h hR" in exI, simp add: pa_ac, rule safe_skip, simp, fast)
 -- {* not user cmd *}
 apply (clarsimp)
 apply (rule conjI, clarsimp, erule aborts.cases, simp_all, clarsimp, clarsimp)
-apply (thin_tac "?P \<longrightarrow> ?Q", thin_tac "\<forall>x y. ?P x y \<longrightarrow> ?Q x y")
 apply (frule red_properties, clarsimp)
 apply (erule red.cases, simp_all, clarsimp, rename_tac C s hh C' s' hh')
 apply (drule_tac a="hJ" and b="hF" and c=hh in all3D, drule_tac a=C' and b=s' and c=hh' in all3D,
@@ -696,7 +691,7 @@ apply (subgoal_tac "pdisj h' hR", erule_tac[2] pdisj_search)
 apply (rule_tac y="hJ'" and x="padd h' hR" in ex2I, clarsimp simp add: pa_ac)
 apply (drule mall4D, erule mimp4D, simp_all add: hsimps)
  apply (erule (1) disjoint_search)
-apply (subst assn_agrees, simp_all, fastsimp)
+apply (subst assn_agrees, simp_all, fastforce)
 done
 
 theorem rule_frame:
@@ -715,7 +710,7 @@ apply (rule conjI)
 apply (clarify, erule_tac red.cases, simp_all, clarify)
  apply (frule (1) red_wf_cmd)
  apply (drule allD, drule (1) all5_imp2D, simp_all)
- apply (simp add: envs_def list_minus_removeAll [THEN sym] locked_eq removeAll_id)+
+ apply (simp add: envs_def list_minus_removeAll [THEN sym] locked_eq)+
  apply fast
 apply (clarsimp simp add: envs_def, rename_tac hQ hJ)
 apply (rule_tac x="hQ" and y="hJ" in ex2I, simp add: pa_ac, fast)
@@ -744,7 +739,7 @@ apply (rule conjI, clarsimp)
  apply (erule aborts.cases, simp_all, clarsimp)
 apply (clarsimp, erule red.cases, simp_all)
  -- {* Seq1 *}
- apply (clarify, rule_tac x="h" and y="hJ" in ex2I, simp add: user_cmd_llocked)
+ apply (clarify, rule_tac x="h" and y="hJ" in ex2I, simp)
 -- {* Seq2 *}
 apply (clarify, drule all3D, drule (2) all3_imp2D, clarsimp)
 apply (drule (1) mall3_impD, rule_tac x="h'" and y="hJ'" in ex2I, simp)
@@ -777,7 +772,7 @@ apply (intro conjI allI impI notI, erule aborts.cases, simp_all)
 apply (erule red.cases, simp_all)
 apply (clarsimp, intro exI, (rule conjI, simp)+)
 apply (subgoal_tac "\<forall>m s h. m \<le> n \<and> (s, h) \<Turnstile> P \<longrightarrow> safe m (Cwhile B C) s h \<Gamma> (Aconj P (Apure (Bnot B)))")
- apply (thin_tac "\<And>x y. ?P x y \<Longrightarrow> ?Q x y", case_tac n, simp, clarsimp)
+ apply (case_tac n, simp, clarsimp)
  apply (intro conjI allI impI notI, erule aborts.cases, simp_all)
  apply (erule red.cases, simp_all)
   apply (clarsimp, intro exI, (rule conjI, simp)+)
@@ -801,7 +796,7 @@ apply (intro conjI allI impI notI, erule aborts.cases, simp_all, clarsimp)
 apply (erule red.cases, simp_all)
  apply (clarsimp, drule allD, drule (1) all5_imp2D, simp)
  apply (clarsimp, intro exI, (rule conjI, simp)+, simp)
-apply (fastsimp simp add: safe_skip)
+apply (fastforce simp add: safe_skip)
 done
 
 theorem rule_local:
@@ -829,8 +824,8 @@ done
 
 lemma ptoheap_read:
  "\<lbrakk> ptoheap (Some h \<oplus> hF) hh; h x = Some (v, k) \<rbrakk> \<Longrightarrow> hh x = Some v"
-apply (case_tac hF, (simp add: ptoheap_def mypadd_def split: split_if_asm)+)
-apply (drule_tac a="x" in allD, fastsimp simp add: padd_def split: option.splits)
+apply (case_tac hF, (simp add: ptoheap_def mypadd_def split: if_split_asm)+)
+apply (drule_tac a="x" in allD, fastforce simp add: padd_def split: option.splits)
 done
 
 theorem rule_read:
@@ -838,8 +833,8 @@ theorem rule_read:
     \<Gamma> \<turnstile> {Apsto k E E'} Cread x E {Aconj (Apsto k E E') (Apure (Beq (Evar x) E'))}"
 apply (clarsimp simp add: CSL_def)
 apply (case_tac n, simp, clarsimp, intro conjI allI impI notI)
- apply (erule aborts.cases, simp_all, fastsimp dest: ptoheap_read)
-apply (erule red.cases, simp_all, fastsimp dest: ptoheap_read)
+ apply (erule aborts.cases, simp_all, fastforce dest: ptoheap_read)
+apply (erule red.cases, simp_all, fastforce dest: ptoheap_read)
 done
 
 lemma pdisj_upd2: "h x = Some (w, pfull) \<Longrightarrow> pdisj (h(x \<mapsto> (v, pfull))) h' = pdisj h h'"
@@ -848,7 +843,7 @@ by (simp add: pdisj_def, rule iff_allI, auto split: option.splits)
 lemma write_helper:
  "\<lbrakk> ptoheap (Some h \<oplus> hF) hh; h x = Some (v, pfull) \<rbrakk> \<Longrightarrow> 
   ptoheap (Some (h(x\<mapsto> (w, pfull))) \<oplus> hF) (hh(x\<mapsto>w))"
-apply (case_tac hF, simp_all add: ptoheap_def mypadd_def split: split_if_asm)
+apply (case_tac hF, simp_all add: ptoheap_def mypadd_def split: if_split_asm)
 apply (clarsimp simp add: pdisj_upd2, simp add: pdisj_def, (drule_tac a=xa in allD)+)
 apply (clarsimp simp add: pdisj_def padd_def split: option.splits)
 done
@@ -857,8 +852,8 @@ theorem rule_write:
   "\<Gamma> \<turnstile> {E \<longmapsto> E0} Cwrite E E' {E \<longmapsto> E'}"
 apply (clarsimp simp add: CSL_def)
 apply (case_tac n, simp, clarsimp simp add: fpdom_def, intro conjI allI impI notI)
-apply (erule aborts.cases, simp_all, fastsimp dest: ptoheap_read)
-apply (erule red.cases, simp_all, fastsimp elim: write_helper)
+apply (erule aborts.cases, simp_all, fastforce dest: ptoheap_read)
+apply (erule red.cases, simp_all, fastforce elim: write_helper)
 done
 
 lemma alloc_helper:
@@ -874,13 +869,13 @@ theorem rule_alloc:
 apply (clarsimp simp add: CSL_def)
 apply (case_tac n, simp, clarsimp, intro conjI allI impI notI)
 apply (erule aborts.cases, simp_all)
-apply (erule red.cases, simp_all, fastsimp elim: alloc_helper)
+apply (erule red.cases, simp_all, fastforce elim: alloc_helper)
 done
 
 lemma free_helper:
  "\<lbrakk> ptoheap (Some h \<oplus> hF) hh; h x = Some (v, pfull) \<rbrakk> \<Longrightarrow> 
   ptoheap (Some (h(x:=None)) \<oplus> hF) (hh(x:=None))"
-apply (case_tac hF, simp_all add: ptoheap_def mypadd_def split: split_if_asm)
+apply (case_tac hF, simp_all add: ptoheap_def mypadd_def split: if_split_asm)
 apply (clarsimp simp add: pdisj_def, (drule_tac a=xa in allD)+)
 apply (clarsimp simp add: padd_def split: option.splits)
 done
@@ -889,8 +884,8 @@ theorem rule_free:
   "\<Gamma> \<turnstile> {E \<longmapsto> E0} Cdispose E {Aemp}"
 apply (clarsimp simp add: CSL_def)
 apply (case_tac n, simp, clarsimp simp add: fpdom_def, intro conjI allI impI notI)
- apply (erule aborts.cases, simp_all, fastsimp dest: ptoheap_read)
-apply (erule red.cases, simp_all, fastsimp intro: ext elim: free_helper dom_eqD)
+ apply (erule aborts.cases, simp_all, fastforce dest: ptoheap_read)
+apply (erule red.cases, simp_all, fastforce elim: free_helper dom_eqD)
 done
 
 subsubsection {* Simple structural rules (Conseq, Disj, Ex) *}
@@ -904,7 +899,7 @@ done
 
 theorem rule_conseq:
  "\<lbrakk> \<Gamma> \<turnstile> {P} C {Q} ; P' \<sqsubseteq> P ; Q \<sqsubseteq> Q' \<rbrakk> \<Longrightarrow> \<Gamma> \<turnstile> {P'} C {Q'}"
-by (fastsimp simp add: CSL_def implies_def elim!: safe_conseq)
+by (fastforce simp add: CSL_def implies_def elim!: safe_conseq)
 
 theorem rule_disj:
  "\<lbrakk> \<Gamma> \<turnstile> {P1} C {Q1}; \<Gamma> \<turnstile> {P2} C {Q2} \<rbrakk> \<Longrightarrow> \<Gamma> \<turnstile> {Adisj P1 P2} C {Adisj Q1 Q2}"
@@ -912,7 +907,7 @@ by (clarsimp simp add: CSL_def, safe)
    (rule safe_conseq, simp_all add: implies_def, drule (2) all3_impD, force)+
 
 theorem rule_ex:
- "\<lbrakk> \<forall>n. \<Gamma> \<turnstile> {P n} C {Q n} \<rbrakk> \<Longrightarrow> \<Gamma> \<turnstile> {Aex P} C {Aex Q}"
+ "\<lbrakk> \<forall>n. (\<Gamma> \<turnstile> {P n} C {Q n}) \<rbrakk> \<Longrightarrow> \<Gamma> \<turnstile> {Aex P} C {Aex Q}"
 by (clarsimp simp add: CSL_def, rule_tac Q = "Q v" in safe_conseq, 
     auto simp add: implies_def)
 
@@ -928,7 +923,7 @@ apply (drule allD, drule (2) all5_imp2D, clarsimp)+
 apply (rule_tac x=h' and y=hJ' in ex2I, simp) 
 apply (erule mall3_imp2D, simp_all)
 apply (subgoal_tac "Some hJ' \<oplus> Some h' = Some hJ'a \<oplus> Some h'a")
- apply (subst (asm) (8 9) mypadd_def, simp split: split_if_asm)
+ apply (subst (asm) (8 9) mypadd_def, simp split: if_split_asm)
   apply (erule_tac[2] notE, erule_tac[2] pdisj_search)
  apply (drule_tac s="a" and y="h'" and y'="h'a" in preciseD [rotated], simp_all
         add: envs_def precise_istar, fast)
@@ -951,15 +946,15 @@ lemma safe_aux:
   \<Longrightarrow> safe n (rem_vars X C) s h \<Gamma> Q"
 apply (induct n arbitrary: C s h, simp_all)
 apply (intro conjI impI allI, clarsimp)
-apply (fastsimp intro: aborts_remvars)
+apply (fastforce intro: aborts_remvars)
 apply (elim conjE, erule order_trans [OF accesses_remvars])
 apply (clarsimp, frule red_properties, drule aux_red, simp_all)
 apply (drule_tac a="Some hJ \<oplus> hF" in allD, simp add: pa_ac)
 apply (clarsimp, drule allD, drule (2) all5_imp2D, clarsimp)
 apply (intro exI conjI, simp+)
-apply (fastsimp simp add: disjoint_commute agreesC)
+apply (fastforce simp add: disjoint_commute agreesC)
 apply (drule (1) mall3_imp2D, fast) 
-apply (erule safe_agrees, fastsimp simp add: disjoint_commute agreesC)
+apply (erule safe_agrees, fastforce simp add: disjoint_commute agreesC)
 done
 
 text {* The proof rule for eliminating auxiliary variables. Note that a
