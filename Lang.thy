@@ -474,12 +474,8 @@ text {* Proposition 4.2: Semantics does not depend on variables not free in the 
 lemma exp_agrees: "agrees (fvE E) s s' \<Longrightarrow> edenot E s = edenot E s'"
 by (simp add: agrees_def, induct E, auto)
 
-(* Dr J.B.:*)
 lemma bexp_agrees: "agrees (fvB B) s s' \<Longrightarrow> bdenot B s = bdenot B s'"
-apply (induct B)
-apply (auto)
-apply (simp_all add: exp_agrees)
-done
+by (induct B, auto simp add: exp_agrees)
 
 lemma accesses_agrees: "agrees (fvC C) s s' \<Longrightarrow> accesses C s = accesses C s'"
 apply (induct C arbitrary: s s', simp_all add: exp_agrees, clarsimp)
