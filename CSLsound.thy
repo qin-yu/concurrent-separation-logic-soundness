@@ -7,6 +7,8 @@ text {* This file contains a soundness proof for CSL (with multiple resources)
   of CSL.  For simplicity, there is a slight difference regarding variable
   side-conditions: we do not allow resource-owned variables. *}
 
+text {* (Adapted to Isabelle 2016-1 by Qin Yu and James Brotherston) *}
+
 subsection {* Separation logic assertions *}
 
 text {* A deep embedding of separation logic assertions. *}
@@ -52,9 +54,10 @@ lemma sat_istar_map_expand:
      \<sigma> \<Turnstile> Aistar (map f l)
      \<longleftrightarrow> (\<exists>h1 h2. (fst \<sigma>, h1) \<Turnstile> f r
               \<and> (fst \<sigma>, h2) \<Turnstile> Aistar (map f (remove1 r l))
-              \<and> snd \<sigma> = (h1 ++ h2) \<and> disjoint (dom h1) (dom h2))" 
+              \<and> snd \<sigma> = (h1 ++ h2)
+              \<and> disjoint (dom h1) (dom h2))"
 apply (case_tac \<sigma>, rename_tac s h, clarify)
-apply (induct l, simp_all, clarsimp, safe)
+apply (induction l arbitrary: \<sigma>, auto)
 apply (intro exI conjI, (simp add: hsimps)+)+
 done
 
@@ -259,11 +262,10 @@ lemma safe_agrees:
      agrees (fvC C \<union> fvA Q \<union> fvAs \<Gamma>) s s' \<rbrakk>
    \<Longrightarrow> safe n C s' h \<Gamma> Q"
 apply (induct n arbitrary: C s s' h bl, simp, simp only: safe.simps, clarify)
-apply (rule conjI, thin_tac "\<forall>x y z. ?P x y z", clarsimp, subst assn_agrees, subst agreesC, assumption+)
-apply (rule conjI, thin_tac "\<forall>x y z. ?P x y z", clarsimp)
+apply (rule conjI, clarsimp, subst assn_agrees, subst agreesC, assumption+)
+apply (rule conjI, clarsimp)
  apply (drule_tac aborts_agrees, simp, fast, simp, simp)
 apply (rule conjI, subst (asm) accesses_agrees, simp_all)
-apply (thin_tac "\<forall>x. ?P x \<longrightarrow> ?Q x")
 apply (clarify, drule_tac X="fvC C \<union> fvAs \<Gamma> \<union> fvA Q" in red_agrees, 
        simp (no_asm), fast, simp (no_asm), fast, clarify)
 apply (drule (1) all5_impD, clarsimp)
@@ -318,7 +320,7 @@ apply (rule conjI, erule order_trans, simp)+
   apply (drule mall3_imp2D, erule_tac[3] mimp3D, simp_all add: hsimps)
   apply (rule_tac s="s" in safe_agrees)
   apply (rule_tac n="Suc n" in safe_mon, simp add: hsimps, simp)
-  apply (fastsimp simp add: agreesC disjoint_commute)
+  apply (fastforce simp add: agreesC disjoint_commute)
   apply (intro conjI | erule (1) disjoint_search)+
  -- {* C2 does a step *}
   apply (clarify, drule_tac a="hJ" and b="h1 ++ hF" in all2D, drule all3_imp2D, 
@@ -329,7 +331,7 @@ apply (rule conjI, erule order_trans, simp)+
   apply (drule mall3_imp2D, erule_tac[3] mimp3D, simp_all add: hsimps)
   apply (rule_tac s="s" in safe_agrees)
    apply (rule_tac n="Suc n" in safe_mon, simp add: hsimps, simp)
-  apply (subst agreesC, fastsimp, fastsimp, fastsimp)
+  apply (subst agreesC, fastforce, fastforce, fastforce)
   -- {* Par skip skip *} 
   apply (clarify)
   apply (rule_tac x="h1 ++ h2" in exI, rule_tac x="hJ" in exI, simp add: hsimps)
@@ -358,15 +360,12 @@ apply (rule conjI, clarify)
  -- {* accesses *}
  apply (rule conjI, erule order_trans, simp)
  -- {* step *}
- apply (thin_tac "\<forall>x. ?P x \<longrightarrow> ?Q x")
  apply (clarify, frule red_properties, clarsimp)
  apply (erule red.cases, simp_all, clarsimp, rename_tac C s C' s' hh)
  -- {* normal step *}
-  apply (thin_tac "?C = Cskip \<longrightarrow> ?Q")
   apply (case_tac "r \<in> set (llocked C')", simp_all add: locked_eq)
    apply (drule_tac a="hJ ++ hR" and b="hF" and c=C' and d=s' and e=hh in all5D, simp add: hsimps)
-   apply (drule impD)
-    apply (subst sat_envs_expand [where r=r], simp_all)
+   apply (drule impD, subst sat_envs_expand [where r=r], simp_all)
      apply (rule wf_cmd_distinct_locked, erule (1) red_wf_cmd)
     apply (intro exI conjI, simp, simp_all add: envs_upd)
    apply (clarsimp simp add: envs_removeAll_irr) 
@@ -380,14 +379,13 @@ apply (rule conjI, clarify)
   apply (drule mimpD, fast, clarsimp) 
   apply (rule_tac x="h' ++ hR" and y="hJ'" in ex2I, simp add: hsimps) 
   apply (drule_tac a=hR in all_imp2D, simp_all add: hsimps)
-  apply (subst assn_agrees, simp_all, fastsimp)
+  apply (subst assn_agrees, simp_all, fastforce)
  -- {* skip *}
  apply (clarsimp simp add: envs_def)
  apply (rule_tac x="h ++ hR" in exI, simp add: hsimps, rule safe_skip, simp, fast)
 -- {* not user cmd *}
 apply (clarsimp)
 apply (rule conjI, clarsimp, erule aborts.cases, simp_all, clarsimp, clarsimp)
-apply (thin_tac "?P \<longrightarrow> ?Q", thin_tac "\<forall>x. ?P x \<longrightarrow> ?Q x")
 apply (frule red_properties, clarsimp)
 apply (erule red.cases, simp_all, clarsimp, rename_tac C s C' s' hh)
 apply (drule_tac a="hJ" and b="hF" and c=C' and d=s' and e=hh in all5D, simp add: hsimps)
@@ -432,7 +430,7 @@ apply (rule_tac y="hJ'" and x="h' ++ hR" in ex2I, clarsimp simp add: hsimps)
 apply (subst map_add_commute, simp add: hsimps)
 apply (drule mall4D, erule mimp4D, simp_all add: hsimps)
  apply (erule (1) disjoint_search)
-apply (subst assn_agrees, simp_all, fastsimp)
+apply (subst assn_agrees, simp_all, fastforce)
 done
 
 theorem rule_frame:
@@ -451,7 +449,7 @@ apply (rule conjI)
 apply (clarify, erule_tac red.cases, simp_all, clarify)
  apply (frule (1) red_wf_cmd)
  apply (drule (1) all5_imp2D, simp_all)
- apply (simp add: envs_def list_minus_removeAll [THEN sym] locked_eq removeAll_id)+
+ apply (simp add: envs_def list_minus_removeAll [THEN sym] locked_eq)+
  apply fast
 apply (clarsimp simp add: envs_def, rename_tac hQ hJ)
 apply (rule_tac x="hQ" and y="hJ" in ex2I, simp add: hsimps, fast)
@@ -479,7 +477,7 @@ apply (rule conjI, clarsimp)
  apply (erule aborts.cases, simp_all, clarsimp)
 apply (clarsimp, erule red.cases, simp_all)
  -- {* Seq1 *}
- apply (clarify, rule_tac x="h" and y="hJ" in ex2I, simp add: user_cmd_llocked)
+ apply (clarify, rule_tac x="h" and y="hJ" in ex2I, simp)
 -- {* Seq2 *}
 apply (clarify, drule (1) all5_impD, clarsimp) 
 apply (drule (1) mall3_impD, rule_tac x="h'" and y="hJ'" in ex2I, simp)
@@ -513,7 +511,7 @@ apply (intro conjI allI impI notI, erule aborts.cases, simp_all)
 apply (elim conjE, erule red.cases, simp_all)
 apply (clarsimp, intro exI, (rule conjI, simp)+)
 apply (subgoal_tac "\<forall>m s h. m \<le> n \<and> (s, h) \<Turnstile> P \<longrightarrow> safe m (Cwhile B C) s h \<Gamma> (Aconj P (Apure (Bnot B)))")
- apply (thin_tac "\<And>x y. ?P x y \<Longrightarrow> ?Q x y", case_tac n, simp, clarsimp)
+ apply (case_tac n, simp, clarsimp)
  apply (intro conjI allI impI notI, erule aborts.cases, simp_all)
  apply (elim conjE, erule red.cases, simp_all)
   apply (clarsimp, intro exI, (rule conjI, simp)+)
@@ -537,7 +535,7 @@ apply (intro conjI allI impI notI, erule aborts.cases, simp_all, clarsimp)
 apply (elim conjE, erule red.cases, simp_all)
  apply (clarsimp, drule (1) all5_imp2D, simp)
  apply (clarsimp, intro exI, (rule conjI, simp)+, simp)
-apply (fastsimp simp add: safe_skip)
+apply (fastforce simp add: safe_skip)
 done
 
 theorem rule_local:
@@ -623,7 +621,7 @@ done
 
 theorem rule_conseq:
  "\<lbrakk> \<Gamma> \<turnstile> {P} C {Q} ; P' \<sqsubseteq> P ; Q \<sqsubseteq> Q' \<rbrakk> \<Longrightarrow> \<Gamma> \<turnstile> {P'} C {Q'}"
-by (fastsimp simp add: CSL_def implies_def elim!: safe_conseq)
+by (fastforce simp add: CSL_def implies_def elim!: safe_conseq)
 
 theorem rule_disj:
  "\<lbrakk> \<Gamma> \<turnstile> {P1} C {Q1}; \<Gamma> \<turnstile> {P2} C {Q2} \<rbrakk> \<Longrightarrow> \<Gamma> \<turnstile> {Adisj P1 P2} C {Adisj Q1 Q2}"
@@ -631,7 +629,7 @@ by (clarsimp simp add: CSL_def, safe)
    (rule safe_conseq, simp_all add: implies_def, drule (2) all3_impD, force)+
 
 theorem rule_ex:
- "\<lbrakk> \<forall>n. \<Gamma> \<turnstile> {P n} C {Q n} \<rbrakk> \<Longrightarrow> \<Gamma> \<turnstile> {Aex P} C {Aex Q}"
+ "\<lbrakk> \<forall>n. (\<Gamma> \<turnstile> {P n} C {Q n}) \<rbrakk> \<Longrightarrow> \<Gamma> \<turnstile> {Aex P} C {Aex Q}"
 by (clarsimp simp add: CSL_def, rule_tac Q = "Q v" in safe_conseq, 
     auto simp add: implies_def)
 
@@ -664,15 +662,15 @@ lemma safe_aux:
   \<Longrightarrow> safe n (rem_vars X C) s h \<Gamma> Q"
 apply (induct n arbitrary: C s h, simp_all)
 apply (intro conjI impI allI, clarsimp)
-apply (fastsimp intro: aborts_remvars)
+apply (fastforce intro: aborts_remvars)
 apply (elim conjE, erule order_trans [OF accesses_remvars])
 apply (clarsimp, frule red_properties, drule aux_red, simp_all)
 apply (drule_tac a="hJ ++ hF" in allD, simp add: hsimps)
 apply (clarsimp, drule (2) all5_imp2D, clarsimp)
 apply (intro exI conjI, simp+)
-apply (fastsimp simp add: disjoint_commute agreesC)
+apply (fastforce simp add: disjoint_commute agreesC)
 apply (drule (1) mall3_imp2D, fast) 
-apply (erule safe_agrees, fastsimp simp add: disjoint_commute agreesC)
+apply (erule safe_agrees, fastforce simp add: disjoint_commute agreesC)
 done
 
 text {* The proof rule for eliminating auxiliary variables. Note that a
@@ -747,30 +745,30 @@ lemma frame_property_helper[rule_format]:
    \<longrightarrow> disjoint (dom h) (dom hF)
    \<longrightarrow> \<not> aborts C (s, h)
    \<longrightarrow> (\<exists>h'. red C (s, h) C' (s', h') \<and> h'' = h' ++ hF \<and> disjoint (dom h') (dom hF))"
-apply (erule red.induct, fastsimp+)
+apply (erule red.induct, fastforce+)
 -- {* Read *}
 apply (clarsimp, rename_tac h hF)
-apply (case_tac "h (edenot E s)", erule notE, fastsimp)
+apply (case_tac "h (edenot E s)", erule notE, fastforce)
 apply (intro exI conjI red_Read, fast+, simp_all)
-apply (fastsimp simp add: disjoint_def)
+apply (fastforce simp add: disjoint_def)
 -- {* Write *}
 apply (clarsimp, rename_tac h hF)
-apply (case_tac "h (edenot E s)", erule notE, fastsimp)
+apply (case_tac "h (edenot E s)", erule notE, fastforce)
 apply (rule_tac x="h(edenot E s \<mapsto> edenot E' s)" in exI, intro conjI, fast)
- apply (rule map_add_upd_left [THEN sym], fastsimp simp add: disjoint_def)
-apply (fastsimp simp add: disjoint_def)
+ apply (rule map_add_upd_left [THEN sym], fastforce simp add: disjoint_def)
+apply (fastforce simp add: disjoint_def)
 -- {* Alloc *}
 apply (clarsimp, rename_tac h hF)
 apply (rule_tac x="h(v \<mapsto> edenot E s)" in exI, intro conjI)
   apply (rule_tac v=v in red_Alloc, fast+)
- apply (rule map_add_upd_left [THEN sym], fastsimp simp add: disjoint_def)
-apply (fastsimp simp add: disjoint_def)
+ apply (rule map_add_upd_left [THEN sym], fastforce simp add: disjoint_def)
+apply (fastforce simp add: disjoint_def)
 -- {* Dispose *}
 apply (clarsimp, rename_tac h hF)
-apply (case_tac "h (edenot E s)", erule notE, fastsimp)
+apply (case_tac "h (edenot E s)", erule notE, fastforce)
   apply (rule_tac x="h(edenot E s := None)" in exI, intro conjI, fast)
- apply (subgoal_tac "hF(edenot E s := None) = hF", simp, rule ext, fastsimp simp add: disjoint_def)
-apply (fastsimp simp add: disjoint_def)
+ apply (subgoal_tac "hF(edenot E s := None) = hF", simp, rule ext, fastforce simp add: disjoint_def)
+apply (fastforce simp add: disjoint_def)
 done
 
 lemma frame_property: 

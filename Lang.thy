@@ -6,6 +6,8 @@ text {* This file defines the syntax and semantics of the programming language
   used by O'Hearn and Brookes. For simplicity, we do not allow resource-owned
   variables. *}
 
+text {* (Adapted to Isabelle 2016-1 by Qin Yu and James Brotherston) *}
+
 subsection {* Language syntax and semantics *}
 
 text {* We define the syntax and the operational semantics of the programming 
@@ -442,8 +444,8 @@ apply (case_tac C1, simp_all split: if_split_asm, (fastforce simp add: agrees_de
 apply (case_tac[1-5] C1a, simp_all split: if_split_asm, (fastforce intro: agrees_refl)+)
 apply (case_tac[!] C1, simp_all split: if_split_asm)
 apply (tactic {* TRYALL (clarify_tac @{context}) *}, simp_all add: disjoint_minus [THEN sym])
-apply (fastforce simp add: agrees_def intro: ext)+
-apply (intro exI conjI, rule_tac v=v in red_Alloc, (fastforce simp add: agrees_def intro:ext)+)
+apply (fastforce simp add: agrees_def)+
+apply (intro exI conjI, rule_tac v=v in red_Alloc, (fastforce simp add: agrees_def)+)
 done
 
 lemma aborts_remvars:
@@ -472,10 +474,11 @@ text {* Proposition 4.2: Semantics does not depend on variables not free in the 
 lemma exp_agrees: "agrees (fvE E) s s' \<Longrightarrow> edenot E s = edenot E s'"
 by (simp add: agrees_def, induct E, auto)
 
+(* Dr J.B.:*)
 lemma bexp_agrees: "agrees (fvB B) s s' \<Longrightarrow> bdenot B s = bdenot B s'"
-apply (simp add: agrees_def, induct B, auto)
-apply (cut_tac E=exp1 and s=s and s'=s' in exp_agrees, simp add: agrees_def,
-       cut_tac E=exp2 and s=s and s'=s' in exp_agrees, simp_all add: agrees_def)+
+apply (induct B)
+apply (auto)
+apply (simp_all add: exp_agrees)
 done
 
 lemma accesses_agrees: "agrees (fvC C) s s' \<Longrightarrow> accesses C s = accesses C s'"
@@ -505,9 +508,10 @@ apply (rule, rule, rule, fast, simp_all, subst exp_agrees, fast, fast)
  apply (clarsimp simp add: agrees_def)
 apply (rule, rule, rule, fast, simp_all, subst exp_agrees, fast, clarsimp?)
  apply (rule ext, clarsimp, fast intro: exp_agrees)
-apply (rule, rule, rule_tac v=v in red_Alloc, simp_all, fast, fast, rule conjI, simp) 
+apply (rule, rule, rule_tac v=v in red_Alloc, simp_all, fast, auto)
  apply (rule ext, clarsimp, fast intro: exp_agrees)
  apply (clarsimp simp add: agrees_def)
+apply (auto)
 apply (rule, rule, rule, fast, simp_all)
  apply (rule ext, clarsimp, fast intro: exp_agrees)
 done

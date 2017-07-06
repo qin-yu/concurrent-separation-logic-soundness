@@ -7,6 +7,8 @@ text {*
   unification-based forward reasoning.
 *}
 
+text {* (Adapted to Isabelle 2016-1 by Qin Yu and James Brotherston) *}
+
 lemma allD: " \<lbrakk> \<forall>a. P a \<rbrakk> \<Longrightarrow> P a" by (erule allE)+
 lemma all2D: " \<lbrakk> \<forall>a b. P a b \<rbrakk> \<Longrightarrow> P a b" by (erule allE)+
 lemma all3D: " \<lbrakk> \<forall>a b c. P a b c \<rbrakk> \<Longrightarrow> P a b c" by (erule allE)+
@@ -161,7 +163,7 @@ lemma removeAllC: "removeAll y (removeAll x z) = removeAll x (removeAll y z)"
 by (induct z, auto)
 
 lemma remove1_removeAll: "remove1 y (removeAll x z) = removeAll x (remove1 y z)"
-by (induct z, auto, induct_tac z, auto)
+by (induct z, auto, simp add: remove1_idem)
 
 lemma list_minus_removeAll: "list_minus (removeAll a x) y = removeAll a (list_minus x y)" 
 by (induct y, simp_all add: removeAllC)
