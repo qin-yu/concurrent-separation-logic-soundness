@@ -100,14 +100,6 @@ definition
 where
   "envs \<Gamma> l l' \<equiv> Aistar (map \<Gamma> (list_minus l l'))"
 
-thm sat_istar_map_expand
-(*
-?r \<in> set ?l \<Longrightarrow> 
-                ?\<sigma> \<Turnstile> Aistar (map ?f ?l) 
-                    = (\<exists>h1 h2. (fst ?\<sigma>, h1) \<Turnstile> ?f ?r 
-                             \<and> (fst ?\<sigma>, h2) \<Turnstile> Aistar (map ?f (remove1 ?r ?l)) 
-                             \<and> snd ?\<sigma> = h1 ++ h2 \<and> disjoint (dom h1) (dom h2))
-*)
 lemma sat_envs_expand:
   "\<lbrakk> r \<in> set l; r \<notin> set l'; distinct l \<rbrakk> \<Longrightarrow>  
      \<sigma> \<Turnstile> envs \<Gamma> l l' 
@@ -115,22 +107,8 @@ lemma sat_envs_expand:
               \<and> (fst \<sigma>, h2) \<Turnstile> envs \<Gamma> (removeAll r l) l'
               \<and> snd \<sigma> = h1 ++ h2 \<and> disjoint (dom h1) (dom h2))" 
 apply (simp add: envs_def distinct_remove1_removeAll [THEN sym] add: list_minus_remove1)
-(* 
-1. \<lbrakk>r \<in> set l; r \<notin> set l'; distinct l\<rbrakk> \<Longrightarrow> 
-          \<sigma> \<Turnstile> Aistar (map \<Gamma> (list_minus l l')) 
-             = (\<exists>h1. (fst \<sigma>, h1) \<Turnstile> \<Gamma> r 
-             \<and> (\<exists>h2. (fst \<sigma>, h2) \<Turnstile> Aistar (map \<Gamma> (remove1 r (list_minus l l'))) 
-             \<and> snd \<sigma> = h1 ++ h2 \<and> disjoint (dom h1) (dom h2)))*)
 apply (subst sat_istar_map_expand [where f=\<Gamma> and r=r], simp_all)
 done
-(*
-theorem sat_envs_expand: 
-\<lbrakk>?r \<in> set ?l; ?r \<notin> set ?l'; distinct ?l\<rbrakk> 
-\<Longrightarrow> 
-?\<sigma> \<Turnstile> envs ?\<Gamma> ?l ?l' = (\<exists>h1 h2. (fst ?\<sigma>, h1) \<Turnstile> ?\<Gamma> ?r 
-                              \<and> (fst ?\<sigma>, h2) \<Turnstile> envs ?\<Gamma> (removeAll ?r ?l) ?l' 
-                              \<and> snd ?\<sigma> = h1 ++ h2 \<and> disjoint (dom h1) (dom h2))
-*)
 
 lemma envs_upd:
   "r \<notin> set l \<Longrightarrow> envs (\<Gamma>(r := R)) l l' = envs \<Gamma> l l'"
@@ -282,7 +260,15 @@ lemma safe_agrees:
      agrees (fvC C \<union> fvA Q \<union> fvAs \<Gamma>) s s' \<rbrakk>
    \<Longrightarrow> safe n C s' h \<Gamma> Q"
 apply (induct n arbitrary: C s s' h bl, simp, simp only: safe.simps, clarify)
-apply (rule conjI, clarsimp, subst assn_agrees, subst agreesC, assumption+)
+apply (rule conjI)
+apply (thin_tac "\<forall>hF. disjoint (dom h) (dom hF) \<longrightarrow> \<not> aborts C (s, h ++ hF)", 
+       thin_tac "\<forall>hJ hF C' \<sigma>'. red C (s, h ++ hJ ++ hF) C' \<sigma>' \<longrightarrow>
+                                  (s, hJ) \<Turnstile> envs \<Gamma> (llocked C') (llocked C) \<longrightarrow>
+                                  disjoint (dom h) (dom hJ) \<and> disjoint (dom h) (dom hF) \<and> disjoint (dom hJ) (dom hF) \<longrightarrow>
+                                  (\<exists>h' hJ'. snd \<sigma>' = h' ++ hJ' ++ hF \<and>
+                                            disjoint (dom h') (dom hJ') \<and> disjoint (dom h') (dom hF) \<and> disjoint (dom hJ') (dom hF) \<and> (fst \<sigma>', hJ') \<Turnstile> envs \<Gamma> (llocked C) (llocked C') \<and> safe n C' (fst \<sigma>') h' \<Gamma> Q)")
+apply (thin_tac "accesses C s \<subseteq> dom h")
+apply (clarsimp, subst assn_agrees, subst agreesC, assumption+)
 apply (rule conjI, clarsimp)
  apply (drule_tac aborts_agrees, simp, fast, simp, simp)
 apply (rule conjI, subst (asm) accesses_agrees, simp_all)
@@ -380,6 +366,7 @@ apply (rule conjI, clarify)
  -- {* accesses *}
  apply (rule conjI, erule order_trans, simp)
  -- {* step *}
+ apply (thin_tac "\<forall>hF. disjoint (dom h) (dom hF) \<longrightarrow> \<not> aborts C (s, h ++ hF)")
  apply (clarify, frule red_properties, clarsimp)
  apply (erule red.cases, simp_all, clarsimp, rename_tac C s C' s' hh)
  -- {* normal step *}
