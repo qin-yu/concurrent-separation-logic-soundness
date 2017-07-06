@@ -7,6 +7,8 @@ text {*
   unification-based forward reasoning.
 *}
 
+text {* (Adapted to Isabelle 2016-1 by Qin Yu and James Brotherston) *}
+
 lemma allD: " \<lbrakk> \<forall>a. P a \<rbrakk> \<Longrightarrow> P a" by (erule allE)+
 lemma all2D: " \<lbrakk> \<forall>a b. P a b \<rbrakk> \<Longrightarrow> P a b" by (erule allE)+
 lemma all3D: " \<lbrakk> \<forall>a b c. P a b c \<rbrakk> \<Longrightarrow> P a b c" by (erule allE)+

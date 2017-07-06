@@ -5,6 +5,8 @@ begin
 text {* This file contains a soundness proof for CSL with multiple resources
   and permissions. *}
 
+text {* (Adapted to Isabelle 2016-1 by Qin Yu and James Brotherston) *}
+
 subsection {* Permission model *}
 
 text {* Fractional permissions are rational numbers in the range (0,1]. *}

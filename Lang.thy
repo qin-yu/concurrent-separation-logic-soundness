@@ -6,6 +6,8 @@ text {* This file defines the syntax and semantics of the programming language
   used by O'Hearn and Brookes. For simplicity, we do not allow resource-owned
   variables. *}
 
+text {* (Adapted to Isabelle 2016-1 by Qin Yu and James Brotherston) *}
+
 subsection {* Language syntax and semantics *}
 
 text {* We define the syntax and the operational semantics of the programming 

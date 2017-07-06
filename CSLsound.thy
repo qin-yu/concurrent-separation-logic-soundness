@@ -7,6 +7,8 @@ text {* This file contains a soundness proof for CSL (with multiple resources)
   of CSL.  For simplicity, there is a slight difference regarding variable
   side-conditions: we do not allow resource-owned variables. *}
 
+text {* (Adapted to Isabelle 2016-1 by Qin Yu and James Brotherston) *}
+
 subsection {* Separation logic assertions *}
 
 text {* A deep embedding of separation logic assertions. *}
@@ -260,15 +262,7 @@ lemma safe_agrees:
      agrees (fvC C \<union> fvA Q \<union> fvAs \<Gamma>) s s' \<rbrakk>
    \<Longrightarrow> safe n C s' h \<Gamma> Q"
 apply (induct n arbitrary: C s s' h bl, simp, simp only: safe.simps, clarify)
-apply (rule conjI)
-apply (thin_tac "\<forall>hF. disjoint (dom h) (dom hF) \<longrightarrow> \<not> aborts C (s, h ++ hF)", 
-       thin_tac "\<forall>hJ hF C' \<sigma>'. red C (s, h ++ hJ ++ hF) C' \<sigma>' \<longrightarrow>
-                                  (s, hJ) \<Turnstile> envs \<Gamma> (llocked C') (llocked C) \<longrightarrow>
-                                  disjoint (dom h) (dom hJ) \<and> disjoint (dom h) (dom hF) \<and> disjoint (dom hJ) (dom hF) \<longrightarrow>
-                                  (\<exists>h' hJ'. snd \<sigma>' = h' ++ hJ' ++ hF \<and>
-                                            disjoint (dom h') (dom hJ') \<and> disjoint (dom h') (dom hF) \<and> disjoint (dom hJ') (dom hF) \<and> (fst \<sigma>', hJ') \<Turnstile> envs \<Gamma> (llocked C) (llocked C') \<and> safe n C' (fst \<sigma>') h' \<Gamma> Q)")
-apply (thin_tac "accesses C s \<subseteq> dom h")
-apply (clarsimp, subst assn_agrees, subst agreesC, assumption+)
+apply (rule conjI, clarsimp, subst assn_agrees, subst agreesC, assumption+)
 apply (rule conjI, clarsimp)
  apply (drule_tac aborts_agrees, simp, fast, simp, simp)
 apply (rule conjI, subst (asm) accesses_agrees, simp_all)
@@ -366,7 +360,6 @@ apply (rule conjI, clarify)
  -- {* accesses *}
  apply (rule conjI, erule order_trans, simp)
  -- {* step *}
- apply (thin_tac "\<forall>hF. disjoint (dom h) (dom hF) \<longrightarrow> \<not> aborts C (s, h ++ hF)")
  apply (clarify, frule red_properties, clarsimp)
  apply (erule red.cases, simp_all, clarsimp, rename_tac C s C' s' hh)
  -- {* normal step *}
