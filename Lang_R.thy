@@ -96,6 +96,36 @@ where
   | "locked (Cresource r C)  = (locked C - {r})"
   | "locked (Cwith r B C)    = {}"
   | "locked (Cinwith r C)    = ({r} \<union> locked C)"
+thm map_ident
+value "M :: 'a multiset"
+function removeAllMset :: "'a \<Rightarrow> 'a multiset \<Rightarrow> 'a multiset"
+where "removeAllMset r (mset []) = (mset [])"
+    | "removeAllMset r (mset (x#xs)) = (if r = x then (removeAllMset r (mset xs)) else ({#x#} + (removeAllMset r (mset xs))))" 
+apply (auto simp add: BNF_Composition.DEADID.rel_refl_strong Basic_BNF_LFPs.xtor_rel Basic_BNF_LFPs.xtor_set)
+apply (metis ex_mset multiset_cases)
+try
+sorry
+
+fun removeAllMset :: "rname  \<Rightarrow> rname multiset \<Rightarrow> rname multiset"
+where "removeAllMset r (mset []) = (mset [])"
+    | "removeAllMset r (mset (x#xs)) = (if r = x then (removeAllMset r (mset xs)) else ({#x#} + (removeAllMset r (mset xs))))" 
+
+value "removeAllMset 0 {#0, 1#}"
+
+fun idfun :: "'a \<Rightarrow> 'a" where "idfun x = x"
+
+value "insort 2 [1, 3]"
+value "sorted_list_of_multiset {#3, 2, 1#}"
+value "sort [1 + 1 + 1, 1 + 1, 1]"
+value "(\<lambda>x. x) 0"
+value "Multiset.fold_mset insort [] {#0, 0#}"
+
+definition list_of_multiset :: "'a multiset \<Rightarrow> 'a list"
+where
+  "list_of_multiset M = fold_mset idfun [] M"
+
+primrec mset_to_list :: "'a multiset \<Rightarrow> 'a list"
+where "mset_to_list {#} = []"
 
 primrec 
   rlocked :: "cmd \<Rightarrow> rname multiset"
@@ -115,6 +145,28 @@ where
   | "rlocked (Cresource r C)  = (rlocked C - mset [r])"
   | "rlocked (Cwith r B C)    = mset []"
   | "rlocked (Cinwith r C)    = (mset [r] + rlocked C)"
+
+value "rlocked C"
+value "[[a::char], [b]]"
+value "mset [[a::char], [b]]"
+value "[x. x\<in>#mset [[a::char], [b]]]"
+lemma "[x. x\<in>#{#1#}] = [1]"
+oops
+lemma "[x. x\<in>{1}] = [1]"
+oops
+lemma "{x. x\<in>{1}} = {1}" by simp
+lemma "[x. x=1] = [1]"
+oops
+value "if 1=1 then True else False"
+value "if 1\<in>{1} then True else False"
+value "if 1\<in>#{#1#} then True else False"
+value "if 1\<in>set [1] then True else False"
+value "if 1\<in>set [x. x=1] then True else False"
+value "{x :: int. x\<in>{1}}"
+value "[x :: int. x\<in>{1}]"
+value "{x :: int. x\<in>#{#1#}}"
+
+
 
 text {* Now the same definition, but return a list of locks that the
   command is currently holding in some fixed order. This defnition 
