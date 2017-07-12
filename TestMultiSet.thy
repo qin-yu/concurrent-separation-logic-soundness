@@ -22,6 +22,18 @@ oops
 value "(inv mset) {#}"
 value "(inv mset) {#1#}"
 
+value "[x. x\<in>#{#1, 0#}]"
+value "1 \<in># {#1, 0#}"
+value "0 \<in># {#1, 0#}"
+value "remove1 0 [x. x\<in>#{#1, 0#}]"
+
+value "[x. x\<in>{0, 1}]"
+lemma "\<forall>x. x\<in>#(mset xs) \<Longrightarrow> x\<in>(set xs)"
+
+value "int (count {#1, 1, 1, 1, 1, 1#} 1)"
+
+value "filter_mset (\<lambda>x. \<not>(x=0)) {#0, (Suc 0)#}"
+
 
 end
 

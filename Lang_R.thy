@@ -103,7 +103,6 @@ where "removeAllMset r (mset []) = (mset [])"
     | "removeAllMset r (mset (x#xs)) = (if r = x then (removeAllMset r (mset xs)) else ({#x#} + (removeAllMset r (mset xs))))" 
 apply (auto simp add: BNF_Composition.DEADID.rel_refl_strong Basic_BNF_LFPs.xtor_rel Basic_BNF_LFPs.xtor_set)
 apply (metis ex_mset multiset_cases)
-try
 sorry
 
 fun removeAllMset :: "rname  \<Rightarrow> rname multiset \<Rightarrow> rname multiset"
@@ -118,14 +117,31 @@ value "insort 2 [1, 3]"
 value "sorted_list_of_multiset {#3, 2, 1#}"
 value "sort [1 + 1 + 1, 1 + 1, 1]"
 value "(\<lambda>x. x) 0"
-value "Multiset.fold_mset insort [] {#0, 0#}"
+value "inv"
+value "inv Suc (Suc 0)"
+value "inv mset ({#1#})"
+thm subset_eq_mset_impl
+value subset_eq_mset_impl
+lemma "inv Suc (Suc x) = x" by simp
+
+lemma "inv mset (mset (x :: rname list)) = (x :: rname list)"
+apply (induct x)
+apply (simp add: inv_def)
+apply (auto simp add: mset_def inv_def)
+apply (auto simp add: add_mset_def)
+apply (rule some_equality)
+apply (auto)
+oops
+
+
 
 definition list_of_multiset :: "'a multiset \<Rightarrow> 'a list"
 where
   "list_of_multiset M = fold_mset idfun [] M"
 
-primrec mset_to_list :: "'a multiset \<Rightarrow> 'a list"
+fun mset_to_list :: "'a multiset \<Rightarrow> 'a list"
 where "mset_to_list {#} = []"
+    | "mset_to_list (add_mset a (mset x)) = (a # mset_to_list x)"
 
 primrec 
   rlocked :: "cmd \<Rightarrow> rname multiset"
