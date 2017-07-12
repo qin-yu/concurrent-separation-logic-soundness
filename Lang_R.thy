@@ -112,7 +112,7 @@ where
   | "rlocked (Cwhile B C)     = mset []"
   | "rlocked (Clocal x E C)   = mset []"
   | "rlocked (Cinlocal x v C) = (rlocked C)"
-  | "rlocked (Cresource r C)  = (rlocked C - mset [r])"
+  | "rlocked (Cresource r C)  = (filter_mset (\<lambda>x. \<not>(x=r)) (rlocked C))"
   | "rlocked (Cwith r B C)    = mset []"
   | "rlocked (Cinwith r C)    = (mset [r] + rlocked C)"
 
