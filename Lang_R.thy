@@ -116,6 +116,9 @@ where
   | "rlocked (Cwith r B C)    = mset []"
   | "rlocked (Cinwith r C)    = (mset [r] + rlocked C)"
 
+definition rdisjoint :: "('a multiset) \<Rightarrow> ('a multiset) \<Rightarrow> bool"
+where "rdisjoint h1 h2 = disjoint (set_mset h1) (set_mset h2)"
+
 text {* Now the same definition, but return a list of locks that the
   command is currently holding in some fixed order. This defnition 
   is needed to work around the deep embedding of assertions. *}
@@ -208,8 +211,8 @@ where
 | rred_Seq2[elim]: "rred C1 \<sigma> C1' \<sigma>' \<Longrightarrow> rred (Cseq C1 C2) \<sigma> (Cseq C1' C2) \<sigma>'" 
 | rred_If1[intro]: "bdenot B (fst \<sigma>) \<Longrightarrow> rred (Cif B C1 C2) \<sigma> C1 \<sigma>"
 | rred_If2[intro]: "\<not> bdenot B (fst \<sigma>) \<Longrightarrow> rred (Cif B C1 C2) \<sigma> C2 \<sigma>"
-| rred_Par1[elim]: "\<lbrakk> rred C1 \<sigma> C1' \<sigma>'; disjoint (set_mset (rlocked C1')) (set_mset (rlocked C2)) \<rbrakk> \<Longrightarrow> rred (Cpar C1 C2) \<sigma> (Cpar C1' C2) \<sigma>'" 
-| rred_Par2[elim]: "\<lbrakk> rred C2 \<sigma> C2' \<sigma>'; disjoint (set_mset (rlocked C1')) (set_mset (rlocked C2)) \<rbrakk> \<Longrightarrow> rred (Cpar C1 C2) \<sigma> (Cpar C1 C2') \<sigma>'"
+| rred_Par1[elim]: "\<lbrakk> rred C1 \<sigma> C1' \<sigma>'; rdisjoint (rlocked C1') (rlocked C2) \<rbrakk> \<Longrightarrow> rred (Cpar C1 C2) \<sigma> (Cpar C1' C2) \<sigma>'" 
+| rred_Par2[elim]: "\<lbrakk> rred C2 \<sigma> C2' \<sigma>'; rdisjoint (rlocked C1) (rlocked C2') \<rbrakk> \<Longrightarrow> rred (Cpar C1 C2) \<sigma> (Cpar C1 C2') \<sigma>'"
 | rred_Par3[intro]: "rred (Cpar Cskip Cskip) \<sigma> (Cskip) \<sigma>"
 | rred_Loop[intro]: "rred (Cwhile B C) \<sigma> (Cif B (Cseq C (Cwhile B C)) Cskip) \<sigma>"
 | rred_Local1[intro]: "v = edenot E (fst \<sigma>) \<Longrightarrow> rred (Clocal x E C) \<sigma> (Cinlocal x v C) \<sigma>"
@@ -329,7 +332,7 @@ where
   | "rwf_cmd (Calloc x E)    = True"
   | "rwf_cmd (Cdispose E)    = True"
   | "rwf_cmd (Cseq C1 C2)    = (rwf_cmd C1 \<and> user_cmd C2)"
-  | "rwf_cmd (Cpar C1 C2)    = (rwf_cmd C1 \<and> rwf_cmd C2 \<and> disjoint (set_mset (rlocked C1)) (set_mset (rlocked C2)))"
+  | "rwf_cmd (Cpar C1 C2)    = (rwf_cmd C1 \<and> rwf_cmd C2 \<and> rdisjoint (rlocked C1) (rlocked C2))"
   | "rwf_cmd (Cif B C1 C2)   = (user_cmd C1 \<and> user_cmd C2 )"
   | "rwf_cmd (Cwhile B C)    = (user_cmd C)"
   | "rwf_cmd (Clocal x E C)  = (user_cmd C)"
@@ -346,13 +349,21 @@ lemma user_cmdD:
   "user_cmd C \<Longrightarrow> (wf_cmd C \<and> locked C = {})"
 by (induct C, auto)
 
+lemma ruser_cmdD:
+  "user_cmd C \<Longrightarrow> (rwf_cmd C \<and> rlocked C = {#})"
+by (induct C, simp_all add: rdisjoint_def)
+
 corollary user_cmd_wf[intro]:
   "user_cmd C \<Longrightarrow> wf_cmd C"
 by (drule user_cmdD, simp)
 
+corollary ruser_cmd_wf[intro]:
+  "user_cmd C \<Longrightarrow> rwf_cmd C"
+by (drule ruser_cmdD, simp)
+
 corollary user_cmd_llocked[simp]:
   "user_cmd C \<Longrightarrow> llocked C = []"
-by (drule user_cmdD, simp add: locked_eq)
+by (drule ruser_cmdD, simp add: rlocked_eq)
 
 text {* (2) Well-formedness is preserved under reduction. *}
 
@@ -360,10 +371,17 @@ lemma red_wf_cmd:
   "\<lbrakk> red C \<sigma> C' \<sigma>' ; wf_cmd C\<rbrakk> \<Longrightarrow> wf_cmd C'"
 by (subgoal_tac "wf_cmd C \<longrightarrow> wf_cmd C'", erule_tac[2] red.induct, auto dest: user_cmdD)
 
+lemma rred_wf_cmd:
+  "\<lbrakk> rred C \<sigma> C' \<sigma>' ; rwf_cmd C\<rbrakk> \<Longrightarrow> rwf_cmd C'"
+by (subgoal_tac "rwf_cmd C \<longrightarrow> rwf_cmd C'", erule_tac[2] rred.induct, auto dest: ruser_cmdD)
+
 text {* (3) Well-formed commands satisfy mutual-exclusion. *}
 
 lemma wf_cmd_distinct_locked: "wf_cmd C \<Longrightarrow> distinct (llocked C)"
 by (induct C, auto simp add: distinct_removeAll locked_eq disjoint_def)
+
+lemma rwf_cmd_distinct_locked: "rwf_cmd C \<Longrightarrow> distinct (llocked C)"
+by (induct C, auto simp add: distinct_removeAll rlocked_eq rdisjoint_def disjoint_def)
 
 subsection {* Free variables, updated variables and substitutions *}
 
@@ -481,6 +499,7 @@ text {* Properties of variable erasure: *}
 
 lemma remvars_simps[simp]:
   "locked (rem_vars X C) = locked C"
+  "rlocked (rem_vars X C) = rlocked C"
   "llocked (rem_vars X C) = llocked C"
   "user_cmd (rem_vars X C) = user_cmd C"
   "rem_vars X (rem_vars X C) = rem_vars X C"
@@ -495,14 +514,17 @@ by (rule ext, induct C arbitrary: X, simp_all)
 
 lemma skip_simps[simp]: 
   "\<not> red Cskip \<sigma> C' \<sigma>'"
+  "\<not> rred Cskip \<sigma> C' \<sigma>'"
   "\<not> aborts Cskip \<sigma>"
   "(rem_vars X C = Cskip) \<longleftrightarrow> (C = Cskip)"
   "(Cskip = rem_vars X C) \<longleftrightarrow> (C = Cskip)"
-by (auto elim: aborts.cases red.cases)
+by (auto elim: aborts.cases red.cases rred.cases)
    (induct C, auto split: if_split_asm)+
 
 lemma disjoint_minus: "disjoint (X - Z) Y = disjoint X (Y - Z)"
 by (auto simp add: disjoint_def)
+
+(* lemma rdisjoint_minus: "rdisjoint (X - Z) Y = rdisjoint X (Y - Z)" *)(* not true *)
 
 lemma aux_red[rule_format]:
   "red C \<sigma> C' \<sigma>' \<Longrightarrow> \<forall>X C1. C = rem_vars X C1 \<longrightarrow> disjoint X (fvC C) \<longrightarrow> \<not> aborts C1 \<sigma> \<longrightarrow>
@@ -514,6 +536,18 @@ apply (case_tac[!] C1, simp_all split: if_split_asm)
 apply (tactic {* TRYALL (clarify_tac @{context}) *}, simp_all add: disjoint_minus [THEN sym])
 apply (fastforce simp add: agrees_def)+
 apply (intro exI conjI, rule_tac v=v in red_Alloc, (fastforce simp add: agrees_def)+)
+done
+
+lemma aux_rred[rule_format]:
+  "rred C \<sigma> C' \<sigma>' \<Longrightarrow> \<forall>X C1. C = rem_vars X C1 \<longrightarrow> disjoint X (fvC C) \<longrightarrow> \<not> aborts C1 \<sigma> \<longrightarrow>
+   (\<exists>C2 s2. rred C1 \<sigma> C2 (s2,snd \<sigma>') \<and> rem_vars X C2 = C' \<and> agrees (-X) (fst \<sigma>') s2)"
+apply (erule_tac rred.induct, simp_all, tactic {* ALLGOALS (clarify_tac @{context}) *})
+apply (case_tac C1, simp_all split: if_split_asm, (fastforce simp add: agrees_def)+)
+apply (case_tac[1-5] C1a, simp_all split: if_split_asm, (fastforce intro: agrees_refl)+)
+apply (case_tac[!] C1, simp_all split: if_split_asm)
+apply (tactic {* TRYALL (clarify_tac @{context}) *}, simp_all add: disjoint_minus [THEN sym])
+apply (fastforce simp add: agrees_def)+
+apply (intro exI conjI, rule_tac v=v in rred_Alloc, (fastforce simp add: agrees_def)+)
 done
 
 lemma aborts_remvars:
@@ -536,6 +570,13 @@ lemma red_properties:
    \<and> wrC C' \<subseteq> wrC C
    \<and> agrees (- wrC C) (fst \<sigma>') (fst \<sigma>)"
 by (erule red.induct, auto simp add: agrees_def)
+
+lemma rred_properties: 
+  "rred C \<sigma> C' \<sigma>' \<Longrightarrow> 
+     fvC C' \<subseteq> fvC C
+   \<and> wrC C' \<subseteq> wrC C
+   \<and> agrees (- wrC C) (fst \<sigma>') (fst \<sigma>)"
+by (erule rred.induct, auto simp add: agrees_def)
 
 text {* Proposition 4.2: Semantics does not depend on variables not free in the term *}
 
@@ -573,6 +614,31 @@ apply (rule, rule, rule, fast, simp_all, subst exp_agrees, fast, fast)
 apply (rule, rule, rule, fast, simp_all, subst exp_agrees, fast, clarsimp?)
  apply (rule ext, clarsimp, fast intro: exp_agrees)
 apply (rule, rule, rule_tac v=v in red_Alloc, simp_all, fast, auto)
+ apply (rule ext, clarsimp, fast intro: exp_agrees)
+ apply (clarsimp simp add: agrees_def)
+apply (auto)
+apply (rule, rule, rule, fast, simp_all)
+ apply (rule ext, clarsimp, fast intro: exp_agrees)
+done
+
+lemma rred_agrees[rule_format]: 
+  "rred C \<sigma> C' \<sigma>' \<Longrightarrow> \<forall>X s. agrees X (fst \<sigma>) s \<longrightarrow> snd \<sigma> = h \<longrightarrow> fvC C \<subseteq> X \<longrightarrow> 
+   (\<exists>s' h'. rred C (s, h) C' (s', h') \<and> agrees X (fst \<sigma>') s' \<and> snd \<sigma>' = h')"
+apply (erule rred.induct, simp_all)
+apply (tactic {* TRYALL (fast_tac @{context}) *}, auto)
+apply (rule, rule conjI, rule rred_If1, simp, subst bexp_agrees, fast+)
+apply (rule, rule conjI, rule rred_If2, simp, subst bexp_agrees, fast+)
+apply (rule, rule conjI, rule, simp, subst exp_agrees, fast+)
+apply (drule_tac a="X \<union> {x}" and b="sa(x:=v)" in all2_imp2D, fastforce simp add: agrees_def, fast)
+ apply (clarsimp, rule, rule conjI, rule, fast+, fastforce simp add: agrees_def)
+apply (rule, rule conjI, rule, simp, subst bexp_agrees, fast+)
+apply (rule, rule, rule, fast, simp_all, subst exp_agrees, fast)
+ apply (clarsimp simp add: agrees_def)
+apply (rule, rule, rule, fast, simp_all, subst exp_agrees, fast, fast)
+ apply (clarsimp simp add: agrees_def)
+apply (rule, rule, rule, fast, simp_all, subst exp_agrees, fast, clarsimp?)
+ apply (rule ext, clarsimp, fast intro: exp_agrees)
+apply (rule, rule, rule_tac v=v in rred_Alloc, simp_all, fast, auto)
  apply (rule ext, clarsimp, fast intro: exp_agrees)
  apply (clarsimp simp add: agrees_def)
 apply (auto)
