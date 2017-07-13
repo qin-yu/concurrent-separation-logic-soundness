@@ -116,7 +116,7 @@ where
   | "rlocked (Cwith r B C)    = mset []"
   | "rlocked (Cinwith r C)    = (mset [r] + rlocked C)"
 
-definition rdisjoint :: "('a multiset) \<Rightarrow> ('a multiset) \<Rightarrow> bool"
+definition rdisjoint :: "('a multiset) \<Rightarrow> ('a multiset) \<Rightarrow> bool" (*qqq*)
 where "rdisjoint h1 h2 = disjoint (set_mset h1) (set_mset h2)"
 
 text {* Now the same definition, but return a list of locks that the
@@ -145,7 +145,7 @@ where
 lemma locked_eq: "locked C = set (llocked C)"
 by (induct C, simp_all)
 
-lemma rlocked_eq: "rlocked C = mset (llocked C)"
+lemma rlocked_eq: "rlocked C = mset (llocked C)" (*qqq*)
 apply (induct C, simp_all)
 apply (rule multiset_eqI)
 by (simp add: mset_filter removeAll_filter_not_eq)
@@ -205,7 +205,7 @@ where
 | red_Free[intro]:  "\<lbrakk> \<sigma> = (s,h); \<sigma>' = (s, h(edenot E s := None)) \<rbrakk> \<Longrightarrow> red (Cdispose E) \<sigma> Cskip \<sigma>'"
 
 inductive
-  rred :: "cmd \<Rightarrow> state \<Rightarrow> cmd \<Rightarrow> state \<Rightarrow> bool"
+  rred :: "cmd \<Rightarrow> state \<Rightarrow> cmd \<Rightarrow> state \<Rightarrow> bool" (*qqq*)
 where
   rred_Seq1[intro]: "rred (Cseq Cskip C) \<sigma> C \<sigma>"
 | rred_Seq2[elim]: "rred C1 \<sigma> C1' \<sigma>' \<Longrightarrow> rred (Cseq C1 C2) \<sigma> (Cseq C1' C2) \<sigma>'" 
@@ -323,7 +323,7 @@ where
   | "wf_cmd (Cinwith r C)   = (wf_cmd C \<and> r \<notin> locked C)"
 
 primrec 
-  rwf_cmd :: "cmd \<Rightarrow> bool"
+  rwf_cmd :: "cmd \<Rightarrow> bool" (*qqq*)
 where
     "rwf_cmd Cskip           = True"
   | "rwf_cmd (Cassign x E)   = True"
@@ -349,7 +349,7 @@ lemma user_cmdD:
   "user_cmd C \<Longrightarrow> (wf_cmd C \<and> locked C = {})"
 by (induct C, auto)
 
-lemma ruser_cmdD:
+lemma ruser_cmdD: (*qqq*)
   "user_cmd C \<Longrightarrow> (rwf_cmd C \<and> rlocked C = {#})"
 by (induct C, simp_all add: rdisjoint_def)
 
@@ -357,13 +357,13 @@ corollary user_cmd_wf[intro]:
   "user_cmd C \<Longrightarrow> wf_cmd C"
 by (drule user_cmdD, simp)
 
-corollary ruser_cmd_wf[intro]:
+corollary ruser_cmd_wf[intro]: (*qqq*)
   "user_cmd C \<Longrightarrow> rwf_cmd C"
 by (drule ruser_cmdD, simp)
 
 corollary user_cmd_llocked[simp]:
   "user_cmd C \<Longrightarrow> llocked C = []"
-by (drule ruser_cmdD, simp add: rlocked_eq)
+by (drule ruser_cmdD, simp add: rlocked_eq) (*qqq*)
 
 text {* (2) Well-formedness is preserved under reduction. *}
 
@@ -371,7 +371,7 @@ lemma red_wf_cmd:
   "\<lbrakk> red C \<sigma> C' \<sigma>' ; wf_cmd C\<rbrakk> \<Longrightarrow> wf_cmd C'"
 by (subgoal_tac "wf_cmd C \<longrightarrow> wf_cmd C'", erule_tac[2] red.induct, auto dest: user_cmdD)
 
-lemma rred_wf_cmd:
+lemma rred_wf_cmd: (*qqq*)
   "\<lbrakk> rred C \<sigma> C' \<sigma>' ; rwf_cmd C\<rbrakk> \<Longrightarrow> rwf_cmd C'"
 by (subgoal_tac "rwf_cmd C \<longrightarrow> rwf_cmd C'", erule_tac[2] rred.induct, auto dest: ruser_cmdD)
 
@@ -380,7 +380,7 @@ text {* (3) Well-formed commands satisfy mutual-exclusion. *}
 lemma wf_cmd_distinct_locked: "wf_cmd C \<Longrightarrow> distinct (llocked C)"
 by (induct C, auto simp add: distinct_removeAll locked_eq disjoint_def)
 
-lemma rwf_cmd_distinct_locked: "rwf_cmd C \<Longrightarrow> distinct (llocked C)"
+lemma rwf_cmd_distinct_locked: "rwf_cmd C \<Longrightarrow> distinct (llocked C)" (*qqq*)
 by (induct C, auto simp add: distinct_removeAll rlocked_eq rdisjoint_def disjoint_def)
 
 subsection {* Free variables, updated variables and substitutions *}
@@ -499,7 +499,7 @@ text {* Properties of variable erasure: *}
 
 lemma remvars_simps[simp]:
   "locked (rem_vars X C) = locked C"
-  "rlocked (rem_vars X C) = rlocked C"
+  "rlocked (rem_vars X C) = rlocked C" (*qqq*)
   "llocked (rem_vars X C) = llocked C"
   "user_cmd (rem_vars X C) = user_cmd C"
   "rem_vars X (rem_vars X C) = rem_vars X C"
@@ -514,7 +514,7 @@ by (rule ext, induct C arbitrary: X, simp_all)
 
 lemma skip_simps[simp]: 
   "\<not> red Cskip \<sigma> C' \<sigma>'"
-  "\<not> rred Cskip \<sigma> C' \<sigma>'"
+  "\<not> rred Cskip \<sigma> C' \<sigma>'" (*qqq*)
   "\<not> aborts Cskip \<sigma>"
   "(rem_vars X C = Cskip) \<longleftrightarrow> (C = Cskip)"
   "(Cskip = rem_vars X C) \<longleftrightarrow> (C = Cskip)"
@@ -524,7 +524,7 @@ by (auto elim: aborts.cases red.cases rred.cases)
 lemma disjoint_minus: "disjoint (X - Z) Y = disjoint X (Y - Z)"
 by (auto simp add: disjoint_def)
 
-(* lemma rdisjoint_minus: "rdisjoint (X - Z) Y = rdisjoint X (Y - Z)" *)(* not true *)
+(* lemma rdisjoint_minus: "rdisjoint (X - Z) Y = rdisjoint X (Y - Z)" *)(* not true *)      (*qqq*)
 
 lemma aux_red[rule_format]:
   "red C \<sigma> C' \<sigma>' \<Longrightarrow> \<forall>X C1. C = rem_vars X C1 \<longrightarrow> disjoint X (fvC C) \<longrightarrow> \<not> aborts C1 \<sigma> \<longrightarrow>
@@ -538,7 +538,7 @@ apply (fastforce simp add: agrees_def)+
 apply (intro exI conjI, rule_tac v=v in red_Alloc, (fastforce simp add: agrees_def)+)
 done
 
-lemma aux_rred[rule_format]:
+lemma aux_rred[rule_format]: (*qqq*)
   "rred C \<sigma> C' \<sigma>' \<Longrightarrow> \<forall>X C1. C = rem_vars X C1 \<longrightarrow> disjoint X (fvC C) \<longrightarrow> \<not> aborts C1 \<sigma> \<longrightarrow>
    (\<exists>C2 s2. rred C1 \<sigma> C2 (s2,snd \<sigma>') \<and> rem_vars X C2 = C' \<and> agrees (-X) (fst \<sigma>') s2)"
 apply (erule_tac rred.induct, simp_all, tactic {* ALLGOALS (clarify_tac @{context}) *})
@@ -571,7 +571,7 @@ lemma red_properties:
    \<and> agrees (- wrC C) (fst \<sigma>') (fst \<sigma>)"
 by (erule red.induct, auto simp add: agrees_def)
 
-lemma rred_properties: 
+lemma rred_properties:  (*qqq*)
   "rred C \<sigma> C' \<sigma>' \<Longrightarrow> 
      fvC C' \<subseteq> fvC C
    \<and> wrC C' \<subseteq> wrC C
@@ -621,7 +621,7 @@ apply (rule, rule, rule, fast, simp_all)
  apply (rule ext, clarsimp, fast intro: exp_agrees)
 done
 
-lemma rred_agrees[rule_format]: 
+lemma rred_agrees[rule_format]:  (*qqq*)
   "rred C \<sigma> C' \<sigma>' \<Longrightarrow> \<forall>X s. agrees X (fst \<sigma>) s \<longrightarrow> snd \<sigma> = h \<longrightarrow> fvC C \<subseteq> X \<longrightarrow> 
    (\<exists>s' h'. rred C (s, h) C' (s', h') \<and> agrees X (fst \<sigma>') s' \<and> snd \<sigma>' = h')"
 apply (erule rred.induct, simp_all)
