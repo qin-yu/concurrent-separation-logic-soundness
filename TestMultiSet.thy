@@ -34,6 +34,7 @@ value "int (count {#1, 1, 1, 1, 1, 1#} 1)"
 
 value "filter_mset (\<lambda>x. \<not>(x=0)) {#0, (Suc 0)#}"
 
+value "[\<lambda>x. x \<in># {#0, (Suc 0), (Suc (Suc 0))#}]"
 
 end
 

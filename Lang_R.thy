@@ -142,6 +142,11 @@ where
 lemma locked_eq: "locked C = set (llocked C)"
 by (induct C, simp_all)
 
+lemma rlocked_eq: "rlocked C = mset (llocked C)"
+apply (induct C, simp_all)
+apply (rule multiset_eqI)
+by (simp add: mset_filter removeAll_filter_not_eq)
+
 subsubsection {* Semantics of expressions *}
 
 text {* Denotational semantics for arithmetic and boolean expressions. *}
@@ -195,6 +200,31 @@ where
 | red_Write[intro]: "\<lbrakk> \<sigma> = (s,h); (*(edenot E s) \<in> dom h;*) \<sigma>' = (s, h(edenot E s \<mapsto> edenot E' s)) \<rbrakk>  \<Longrightarrow> red (Cwrite E E') \<sigma> Cskip \<sigma>'"
 | red_Alloc[intro]: "\<lbrakk> \<sigma> = (s,h); v \<notin> dom h; \<sigma>' = (s(x := v), h(v \<mapsto> edenot E s)) \<rbrakk>  \<Longrightarrow> red (Calloc x E) \<sigma> Cskip \<sigma>'"
 | red_Free[intro]:  "\<lbrakk> \<sigma> = (s,h); \<sigma>' = (s, h(edenot E s := None)) \<rbrakk> \<Longrightarrow> red (Cdispose E) \<sigma> Cskip \<sigma>'"
+
+inductive
+  rred :: "cmd \<Rightarrow> state \<Rightarrow> cmd \<Rightarrow> state \<Rightarrow> bool"
+where
+  rred_Seq1[intro]: "rred (Cseq Cskip C) \<sigma> C \<sigma>"
+| rred_Seq2[elim]: "rred C1 \<sigma> C1' \<sigma>' \<Longrightarrow> rred (Cseq C1 C2) \<sigma> (Cseq C1' C2) \<sigma>'" 
+| rred_If1[intro]: "bdenot B (fst \<sigma>) \<Longrightarrow> rred (Cif B C1 C2) \<sigma> C1 \<sigma>"
+| rred_If2[intro]: "\<not> bdenot B (fst \<sigma>) \<Longrightarrow> rred (Cif B C1 C2) \<sigma> C2 \<sigma>"
+| rred_Par1[elim]: "\<lbrakk> rred C1 \<sigma> C1' \<sigma>'; disjoint (set_mset (rlocked C1')) (set_mset (rlocked C2)) \<rbrakk> \<Longrightarrow> rred (Cpar C1 C2) \<sigma> (Cpar C1' C2) \<sigma>'" 
+| rred_Par2[elim]: "\<lbrakk> rred C2 \<sigma> C2' \<sigma>'; disjoint (set_mset (rlocked C1')) (set_mset (rlocked C2)) \<rbrakk> \<Longrightarrow> rred (Cpar C1 C2) \<sigma> (Cpar C1 C2') \<sigma>'"
+| rred_Par3[intro]: "rred (Cpar Cskip Cskip) \<sigma> (Cskip) \<sigma>"
+| rred_Loop[intro]: "rred (Cwhile B C) \<sigma> (Cif B (Cseq C (Cwhile B C)) Cskip) \<sigma>"
+| rred_Local1[intro]: "v = edenot E (fst \<sigma>) \<Longrightarrow> rred (Clocal x E C) \<sigma> (Cinlocal x v C) \<sigma>"
+| rred_Local2[intro]:"\<lbrakk> \<sigma> = (s,h); rred C (s(x:=v),h) C' (s',h'); v' = s' x; \<sigma>' = (s'(x := s x), h') \<rbrakk> \<Longrightarrow> rred (Cinlocal x v C) \<sigma> (Cinlocal x v' C') \<sigma>'"
+| rred_Local3[intro]: "rred (Cinlocal x v Cskip) \<sigma> Cskip \<sigma>"
+| rred_Res1[intro]:  "rred C \<sigma> C' \<sigma>' \<Longrightarrow> rred (Cresource r C) \<sigma> (Cresource r C') \<sigma>'" 
+| rred_Res2[intro]:  "rred (Cresource r Cskip) \<sigma> Cskip \<sigma>" 
+| rred_With1[intro]: "bdenot B (fst \<sigma>) \<Longrightarrow> rred (Cwith r B C) \<sigma> (Cinwith r C) \<sigma>"
+| rred_With2[elim]:  "\<lbrakk> rred C \<sigma> C' \<sigma>'; r \<notin># rlocked C' \<rbrakk> \<Longrightarrow> rred (Cinwith r C) \<sigma> (Cinwith r C') \<sigma>'"
+| rred_With3[intro]: "rred (Cinwith r Cskip) \<sigma> Cskip \<sigma>"
+| rred_Assign[intro]:"\<lbrakk> \<sigma> = (s,h); \<sigma>' = (s(x := edenot E s), h) \<rbrakk> \<Longrightarrow> rred (Cassign x E) \<sigma> Cskip \<sigma>'"
+| rred_Read[intro]:  "\<lbrakk> \<sigma> = (s,h); h(edenot E s) = Some v; \<sigma>' = (s(x := v), h) \<rbrakk> \<Longrightarrow> rred (Cread x E) \<sigma> Cskip \<sigma>'"
+| rred_Write[intro]: "\<lbrakk> \<sigma> = (s,h); (*(edenot E s) \<in> dom h;*) \<sigma>' = (s, h(edenot E s \<mapsto> edenot E' s)) \<rbrakk>  \<Longrightarrow> rred (Cwrite E E') \<sigma> Cskip \<sigma>'"
+| rred_Alloc[intro]: "\<lbrakk> \<sigma> = (s,h); v \<notin> dom h; \<sigma>' = (s(x := v), h(v \<mapsto> edenot E s)) \<rbrakk>  \<Longrightarrow> rred (Calloc x E) \<sigma> Cskip \<sigma>'"
+| rred_Free[intro]:  "\<lbrakk> \<sigma> = (s,h); \<sigma>' = (s, h(edenot E s := None)) \<rbrakk> \<Longrightarrow> rred (Cdispose E) \<sigma> Cskip \<sigma>'"
 
 inductive_cases red_par_cases: "red (Cpar C1 C2) \<sigma> C' \<sigma>'"
 
@@ -288,6 +318,25 @@ where
   | "wf_cmd (Cresource r C) = (wf_cmd C)"
   | "wf_cmd (Cwith r B C)   = (user_cmd C)"
   | "wf_cmd (Cinwith r C)   = (wf_cmd C \<and> r \<notin> locked C)"
+
+primrec 
+  rwf_cmd :: "cmd \<Rightarrow> bool"
+where
+    "rwf_cmd Cskip           = True"
+  | "rwf_cmd (Cassign x E)   = True"
+  | "rwf_cmd (Cread x E)     = True"
+  | "rwf_cmd (Cwrite E E')   = True"
+  | "rwf_cmd (Calloc x E)    = True"
+  | "rwf_cmd (Cdispose E)    = True"
+  | "rwf_cmd (Cseq C1 C2)    = (rwf_cmd C1 \<and> user_cmd C2)"
+  | "rwf_cmd (Cpar C1 C2)    = (rwf_cmd C1 \<and> rwf_cmd C2 \<and> disjoint (set_mset (rlocked C1)) (set_mset (rlocked C2)))"
+  | "rwf_cmd (Cif B C1 C2)   = (user_cmd C1 \<and> user_cmd C2 )"
+  | "rwf_cmd (Cwhile B C)    = (user_cmd C)"
+  | "rwf_cmd (Clocal x E C)  = (user_cmd C)"
+  | "rwf_cmd (Cinlocal x v C)= (rwf_cmd C)"
+  | "rwf_cmd (Cresource r C) = (rwf_cmd C)"
+  | "rwf_cmd (Cwith r B C)   = (user_cmd C)"
+  | "rwf_cmd (Cinwith r C)   = (rwf_cmd C \<and> r \<notin># rlocked C)"
 
 text {* Now, we establish some basic properties of well-formed commands: *}
 
