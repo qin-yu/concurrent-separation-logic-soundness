@@ -1,5 +1,5 @@
 theory Lang
-imports Main VHelper
+imports Main "~~/src/HOL/Library/Multiset" VHelper
 begin
 
 text {* This file defines the syntax and semantics of the programming language
@@ -79,23 +79,26 @@ text {* The following function returns the set of locks that a command is
 currently holding. *} 
 
 primrec 
-  locked :: "cmd \<Rightarrow> rname set"
+  locked :: "cmd \<Rightarrow> rname multiset"
 where
-    "locked Cskip            = {}"
-  | "locked (Cassign x E)    = {}"
-  | "locked (Cread x E)      = {}"
-  | "locked (Cwrite E E')    = {}"
-  | "locked (Calloc x E)     = {}"
-  | "locked (Cdispose E)     = {}"
+    "locked Cskip            = mset []"
+  | "locked (Cassign x E)    = mset []"
+  | "locked (Cread x E)      = mset []"
+  | "locked (Cwrite E E')    = mset []"
+  | "locked (Calloc x E)     = mset []"
+  | "locked (Cdispose E)     = mset []"
   | "locked (Cseq C1 C2)     = (locked C1)"
-  | "locked (Cpar C1 C2)     = (locked C1 \<union> locked C2)"
-  | "locked (Cif B C1 C2)    = {}"
-  | "locked (Cwhile B C)     = {}"
-  | "locked (Clocal x E C)   = {}"
+  | "locked (Cpar C1 C2)     = (locked C1 + locked C2)"
+  | "locked (Cif B C1 C2)    = mset []"
+  | "locked (Cwhile B C)     = mset []"
+  | "locked (Clocal x E C)   = mset []"
   | "locked (Cinlocal x v C) = (locked C)"
-  | "locked (Cresource r C)  = (locked C - {r})"
-  | "locked (Cwith r B C)    = {}"
-  | "locked (Cinwith r C)    = ({r} \<union> locked C)"
+  | "locked (Cresource r C)  = (filter_mset (\<lambda>x. \<not>(x=r)) (locked C))"
+  | "locked (Cwith r B C)    = mset []"
+  | "locked (Cinwith r C)    = (mset [r] + locked C)"
+
+definition rdisjoint :: "('a multiset) \<Rightarrow> ('a multiset) \<Rightarrow> bool" (*qqq*)
+where "rdisjoint h1 h2 = disjoint (set_mset h1) (set_mset h2)"
 
 text {* Now the same definition, but return a list of locks that the
   command is currently holding in some fixed order. This defnition 
