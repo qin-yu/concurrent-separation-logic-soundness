@@ -192,41 +192,41 @@ text {* Below, we define the sets of memory accesses and memory writes
   access because the memory cell allocated is fresh. *}
 
 primrec
-  accesses :: "cmd \<Rightarrow> stack \<Rightarrow> nat multiset"    (*qqq*)
+  accesses :: "cmd \<Rightarrow> stack \<Rightarrow> nat set"
 where
-    "accesses Cskip            s = {#}"
-  | "accesses (Cassign x E)    s = {#}"
-  | "accesses (Cread x E)      s = {#edenot E s#}"
-  | "accesses (Cwrite E E')    s = {#edenot E s#}"
-  | "accesses (Calloc x E)     s = {#}"
-  | "accesses (Cdispose E)     s = {#edenot E s#}"
+    "accesses Cskip            s = {}"
+  | "accesses (Cassign x E)    s = {}"
+  | "accesses (Cread x E)      s = {edenot E s}"
+  | "accesses (Cwrite E E')    s = {edenot E s}"
+  | "accesses (Calloc x E)     s = {}"
+  | "accesses (Cdispose E)     s = {edenot E s}"
   | "accesses (Cseq C1 C2)     s = accesses C1 s"
-  | "accesses (Cpar C1 C2)     s = accesses C1 s + accesses C2 s"
-  | "accesses (Cif B C1 C2)    s = {#}"
-  | "accesses (Cwhile B C)     s = {#}"
-  | "accesses (Clocal x E C)   s = {#}"
+  | "accesses (Cpar C1 C2)     s = accesses C1 s \<union> accesses C2 s"
+  | "accesses (Cif B C1 C2)    s = {}"
+  | "accesses (Cwhile B C)     s = {}"
+  | "accesses (Clocal x E C)   s = {}"
   | "accesses (Cinlocal x v C) s = accesses C (s(x:=v))"
   | "accesses (Cresource r C)  s = accesses C s"
-  | "accesses (Cwith r B C)    s = {#}"
+  | "accesses (Cwith r B C)    s = {}"
   | "accesses (Cinwith r C)    s = accesses C s"
 
 primrec
-  writes :: "cmd \<Rightarrow> stack \<Rightarrow> nat multiset "    (*qqq*)
+  writes :: "cmd \<Rightarrow> stack \<Rightarrow> nat set "
 where
-    "writes Cskip            s = {#}"
-  | "writes (Cassign x E)    s = {#}"
-  | "writes (Cread x E)      s = {#}"
-  | "writes (Cwrite E E')    s = {#edenot E s#}"
-  | "writes (Calloc x E)     s = {#}"
-  | "writes (Cdispose E)     s = {#edenot E s#}"
+    "writes Cskip            s = {}"
+  | "writes (Cassign x E)    s = {}"
+  | "writes (Cread x E)      s = {}"
+  | "writes (Cwrite E E')    s = {edenot E s}"
+  | "writes (Calloc x E)     s = {}"
+  | "writes (Cdispose E)     s = {edenot E s}"
   | "writes (Cseq C1 C2)     s = writes C1 s"
-  | "writes (Cpar C1 C2)     s = writes C1 s + writes C2 s"
-  | "writes (Cif B C1 C2)    s = {#}"
-  | "writes (Clocal x E C)   s = {#}"
+  | "writes (Cpar C1 C2)     s = writes C1 s \<union> writes C2 s"
+  | "writes (Cif B C1 C2)    s = {}"
+  | "writes (Clocal x E C)   s = {}"
   | "writes (Cinlocal x v C) s = writes C (s(x:=v))"
-  | "writes (Cwhile B C)     s = {#}"
+  | "writes (Cwhile B C)     s = {}"
   | "writes (Cresource r C)  s = writes C s"
-  | "writes (Cwith r B C)    s = {#}"
+  | "writes (Cwith r B C)    s = {}"
   | "writes (Cinwith r C)    s = writes C s"
 
 text {* A command aborts in a given state whenever it can access
@@ -240,8 +240,8 @@ where
   aborts_Seq[intro]:   "aborts C1 \<sigma> \<Longrightarrow> aborts (Cseq C1 C2) \<sigma>" 
 | aborts_Par1[intro]:  "aborts C1 \<sigma> \<Longrightarrow> aborts (Cpar C1 C2) \<sigma>" 
 | aborts_Par2[intro]:  "aborts C2 \<sigma> \<Longrightarrow> aborts (Cpar C1 C2) \<sigma>"
-| aborts_Race1[intro]:  "\<not> rdisjoint (accesses C1 (fst \<sigma>)) (writes C2 (fst \<sigma>)) \<Longrightarrow> aborts (Cpar C1 C2) \<sigma>"    (*qqq*)
-| aborts_Race2[intro]:  "\<not> rdisjoint (writes C1 (fst \<sigma>)) (accesses C2 (fst \<sigma>)) \<Longrightarrow> aborts (Cpar C1 C2) \<sigma>"    (*qqq*)
+| aborts_Race1[intro]:  "\<not> disjoint (accesses C1 (fst \<sigma>)) (writes C2 (fst \<sigma>)) \<Longrightarrow> aborts (Cpar C1 C2) \<sigma>"
+| aborts_Race2[intro]:  "\<not> disjoint (writes C1 (fst \<sigma>)) (accesses C2 (fst \<sigma>)) \<Longrightarrow> aborts (Cpar C1 C2) \<sigma>"
 | aborts_Local[intro]:  "aborts C ((fst \<sigma>)(x:=v), snd \<sigma>)  \<Longrightarrow> aborts (Cinlocal x v C) \<sigma>"
 | aborts_Res[intro]:   "aborts C \<sigma>  \<Longrightarrow> aborts (Cresource r C) \<sigma>"
 | aborts_With[intro]:  "aborts C \<sigma>  \<Longrightarrow> aborts (Cinwith r C) \<sigma>"
@@ -266,20 +266,20 @@ where
   | "wf_cmd (Calloc x E)    = True"
   | "wf_cmd (Cdispose E)    = True"
   | "wf_cmd (Cseq C1 C2)    = (wf_cmd C1 \<and> user_cmd C2)"
-  | "wf_cmd (Cpar C1 C2)    = (wf_cmd C1 \<and> wf_cmd C2 \<and> rdisjoint (locked C1) (locked C2))"    (*qqq*)
+  | "wf_cmd (Cpar C1 C2)    = (wf_cmd C1 \<and> wf_cmd C2 \<and> rdisjoint (locked C1) (locked C2))" (*qqq*)
   | "wf_cmd (Cif B C1 C2)   = (user_cmd C1 \<and> user_cmd C2 )"
   | "wf_cmd (Cwhile B C)    = (user_cmd C)"
   | "wf_cmd (Clocal x E C)  = (user_cmd C)"
   | "wf_cmd (Cinlocal x v C)= (wf_cmd C)"
   | "wf_cmd (Cresource r C) = (wf_cmd C)"
   | "wf_cmd (Cwith r B C)   = (user_cmd C)"
-  | "wf_cmd (Cinwith r C)   = (wf_cmd C \<and> r \<notin># locked C)"    (*qqq*)
+  | "wf_cmd (Cinwith r C)   = (wf_cmd C \<and> r \<notin># locked C)"
 
 text {* Now, we establish some basic properties of well-formed commands: *}
 
 text {* (1) User commands are well-formed and have no locks acquired. *}
 
-lemma user_cmdD:    (*qqq*)
+lemma user_cmdD:
   "user_cmd C \<Longrightarrow> (wf_cmd C \<and> locked C = {#})"
 by (induct C, simp_all add: rdisjoint_def)
 
@@ -308,36 +308,36 @@ text {* The free variables of expressions, boolean expressions, and
 commands are defined as expected: *}
 
 primrec
-  fvE :: "exp \<Rightarrow> var multiset"    (*qqq*)
+  fvE :: "exp \<Rightarrow> var set"
 where
-  "fvE (Evar v) = {#v#}"
-| "fvE (Enum n) = {#}"
-| "fvE (Eplus e1 e2) = (fvE e1 + fvE e2)"
+  "fvE (Evar v) = {v}"
+| "fvE (Enum n) = {}"
+| "fvE (Eplus e1 e2) = (fvE e1 \<union> fvE e2)"
 
 primrec
-  fvB :: "bexp \<Rightarrow> var multiset"    (*qqq*)
+  fvB :: "bexp \<Rightarrow> var set"
 where
-  "fvB (Beq e1 e2)  = (fvE e1 + fvE e2)"
-| "fvB (Band b1 b2) = (fvB b1 + fvB b2)"
+  "fvB (Beq e1 e2)  = (fvE e1 \<union> fvE e2)"
+| "fvB (Band b1 b2) = (fvB b1 \<union> fvB b2)"
 | "fvB (Bnot b)     = (fvB b)"
 
 primrec
-  fvC :: "cmd \<Rightarrow> var multiset"    (*qqq*)
+  fvC :: "cmd \<Rightarrow> var set"
 where
-  "fvC (Cskip)         = {#}"
-| "fvC (Cassign v E)   = ({#v#} + fvE E)"
-| "fvC (Cread v E)     = ({#v#} + fvE E)"
-| "fvC (Cwrite E1 E2)  = (fvE E1 + fvE E2)"
-| "fvC (Calloc v E)    = ({#v#} + fvE E)"
+  "fvC (Cskip)         = {}"
+| "fvC (Cassign v E)   = ({v} \<union> fvE E)"
+| "fvC (Cread v E)     = ({v} \<union> fvE E)"
+| "fvC (Cwrite E1 E2)  = (fvE E1 \<union> fvE E2)"
+| "fvC (Calloc v E)    = ({v} \<union> fvE E)"
 | "fvC (Cdispose E)    = (fvE E)"
-| "fvC (Cseq C1 C2)    = (fvC C1 + fvC C2)"
-| "fvC (Cpar C1 C2)    = (fvC C1 + fvC C2)"
-| "fvC (Cif B C1 C2)   = (fvB B + fvC C1 + fvC C2)"
-| "fvC (Cwhile B C)    = (fvB B + fvC C)"
-| "fvC (Clocal x E C)  = (fvE E + (fvC C - {#x#}))"
-| "fvC (Cinlocal x v C)= (fvC C - {#x#})"
+| "fvC (Cseq C1 C2)    = (fvC C1 \<union> fvC C2)"
+| "fvC (Cpar C1 C2)    = (fvC C1 \<union> fvC C2)"
+| "fvC (Cif B C1 C2)   = (fvB B \<union> fvC C1 \<union> fvC C2)"
+| "fvC (Cwhile B C)    = (fvB B \<union> fvC C)"
+| "fvC (Clocal x E C)  = (fvE E \<union> (fvC C - {x}))"
+| "fvC (Cinlocal x v C)= (fvC C - {x})"
 | "fvC (Cresource r C) = (fvC C)"
-| "fvC (Cwith r B C)   = (fvB B + fvC C)"
+| "fvC (Cwith r B C)   = (fvB B \<union> fvC C)"
 | "fvC (Cinwith r C)   = (fvC C)"
 
 text {* Below, we define the set of syntactically updated variables 
@@ -345,20 +345,20 @@ text {* Below, we define the set of syntactically updated variables
   are actually updated during the command's execution. *}
 
 primrec
-  wrC :: "cmd \<Rightarrow> var multiset"    (*qqq*)
+  wrC :: "cmd \<Rightarrow> var set"
 where
-  "wrC (Cskip)         = {#}"
-| "wrC (Cassign v E)   = {#v#}"
-| "wrC (Cread v E)     = {#v#}"
-| "wrC (Cwrite E1 E2)  = {#}"
-| "wrC (Calloc v E)    = {#v#}"
-| "wrC (Cdispose E)    = {#}"
-| "wrC (Cseq C1 C2)    = (wrC C1 + wrC C2)"
-| "wrC (Cpar C1 C2)    = (wrC C1 + wrC C2)"
-| "wrC (Cif B C1 C2)   = (wrC C1 + wrC C2)"
+  "wrC (Cskip)         = {}"
+| "wrC (Cassign v E)   = {v}"
+| "wrC (Cread v E)     = {v}"
+| "wrC (Cwrite E1 E2)  = {}"
+| "wrC (Calloc v E)    = {v}"
+| "wrC (Cdispose E)    = {}"
+| "wrC (Cseq C1 C2)    = (wrC C1 \<union> wrC C2)"
+| "wrC (Cpar C1 C2)    = (wrC C1 \<union> wrC C2)"
+| "wrC (Cif B C1 C2)   = (wrC C1 \<union> wrC C2)"
 | "wrC (Cwhile B C)    = (wrC C)"
-| "wrC (Clocal x E C)  = (wrC C - {#x#})"
-| "wrC (Cinlocal x v C)= (wrC C - {#x#})"
+| "wrC (Clocal x E C)  = (wrC C - {x})"
+| "wrC (Cinlocal x v C)= (wrC C - {x})"
 | "wrC (Cresource r C) = (wrC C)"
 | "wrC (Cwith r B C)   = (wrC C)"
 | "wrC (Cinwith r C)   = (wrC C)"
@@ -396,11 +396,11 @@ text {* The following function erases all assignments and reads to
   variables in the set @{term X}. *}
 
 primrec 
-  rem_vars :: "var multiset \<Rightarrow> cmd \<Rightarrow> cmd"    (*qqq*)
+  rem_vars :: "var set \<Rightarrow> cmd \<Rightarrow> cmd"
 where
     "rem_vars X Cskip          = Cskip"
-  | "rem_vars X (Cassign x E)  = (if x \<in># X then Cseq Cskip Cskip else Cassign x E)"
-  | "rem_vars X (Cread x E)    = (if x \<in># X then Cseq Cskip Cskip else Cread x E)"
+  | "rem_vars X (Cassign x E)  = (if x \<in> X then Cseq Cskip Cskip else Cassign x E)"
+  | "rem_vars X (Cread x E)    = (if x \<in> X then Cseq Cskip Cskip else Cread x E)"
   | "rem_vars X (Cwrite E E')  = Cwrite E E'"
   | "rem_vars X (Calloc x E)   = Calloc x E"
   | "rem_vars X (Cdispose E)   = Cdispose E"
@@ -408,8 +408,8 @@ where
   | "rem_vars X (Cpar C1 C2)   = Cpar (rem_vars X C1) (rem_vars X C2)"
   | "rem_vars X (Cif B C1 C2)  = Cif B (rem_vars X C1) (rem_vars X C2)"
   | "rem_vars X (Cwhile B C)   = Cwhile B (rem_vars X C)"
-  | "rem_vars X (Clocal x E C) = Clocal x E (rem_vars (X - {#x#}) C)"
-  | "rem_vars X (Cinlocal x v C) = Cinlocal x v (rem_vars (X - {#x#}) C)"
+  | "rem_vars X (Clocal x E C) = Clocal x E (rem_vars (X - {x}) C)"
+  | "rem_vars X (Cinlocal x v C) = Cinlocal x v (rem_vars (X - {x}) C)"
   | "rem_vars X (Cresource r C)  = Cresource r (rem_vars X C)"
   | "rem_vars X (Cwith r B C) = Cwith r B (rem_vars X C)"
   | "rem_vars X (Cinwith r C) = Cinwith r (rem_vars X C)"
@@ -423,11 +423,11 @@ lemma remvars_simps[simp]:
   "rem_vars X (rem_vars X C) = rem_vars X C"
 by (induct C arbitrary: X, simp_all)+
 
-lemma accesses_remvars: "accesses (rem_vars X C) s \<subseteq># accesses C s"    (*qqq*)
-by (induct C arbitrary: X s, simp_all add: mset_subset_eq_mono_add)
+lemma accesses_remvars: "accesses (rem_vars X C) s \<subseteq> accesses C s"
+by (induct C arbitrary: X s, simp_all, fast)
 
 lemma writes_remvars[simp]: 
-  "writes (rem_vars X C) = writes C"    (*qqq*)
+  "writes (rem_vars X C) = writes C"
 by (rule ext, induct C arbitrary: X, simp_all)
 
 lemma skip_simps[simp]: 
@@ -440,24 +440,13 @@ by (auto elim: aborts.cases red.cases)
 
 lemma disjoint_minus: "disjoint (X - Z) Y = disjoint X (Y - Z)"
 by (auto simp add: disjoint_def)
-(* lemma rdisjoint_minus: "rdisjoint (X - Z) Y = rdisjoint X (Y - Z)" *)(* not true *)      (*qqq*)
-
-lemma "(agrees (- (set_mset {#})) (fst \<sigma>') s2) = (agrees (- {}) (fst \<sigma>') s2)"
-by simp
-lemma "(agrees (- (set_mset {#0#})) (fst \<sigma>') s2) = (agrees (- {0}) (fst \<sigma>') s2)"
-by simp
-lemma "\<lbrakk>set_mset MX = X\<rbrakk> \<Longrightarrow> (agrees (- (set_mset (MX :: 'a multiset))) (fst \<sigma>') s2) = (agrees (- (X :: 'a set)) (fst \<sigma>') s2)"
-by simp
 
 lemma aux_red[rule_format]:
-  "red C \<sigma> C' \<sigma>' \<Longrightarrow> \<forall>X C1. C = rem_vars X C1 \<longrightarrow> rdisjoint X (fvC C) \<longrightarrow> \<not> aborts C1 \<sigma> \<longrightarrow>
-   (\<exists>C2 s2. red C1 \<sigma> C2 (s2,snd \<sigma>') \<and> rem_vars X C2 = C' \<and> agrees (- set_mset X) (fst \<sigma>') s2)"
+  "red C \<sigma> C' \<sigma>' \<Longrightarrow> \<forall>X C1. C = rem_vars X C1 \<longrightarrow> disjoint X (fvC C) \<longrightarrow> \<not> aborts C1 \<sigma> \<longrightarrow>
+   (\<exists>C2 s2. red C1 \<sigma> C2 (s2,snd \<sigma>') \<and> rem_vars X C2 = C' \<and> agrees (-X) (fst \<sigma>') s2)"
 apply (erule_tac red.induct, simp_all, tactic {* ALLGOALS (clarify_tac @{context}) *})
 apply (case_tac C1, simp_all split: if_split_asm, (fastforce simp add: agrees_def)+)
-apply (case_tac[1-5] C1a)
-apply (simp_all split: if_split_asm)
-apply (simp_all)
-apply (fastforce intro: agrees_refl)+
+apply (case_tac[1-5] C1a, simp_all split: if_split_asm, (fastforce intro: agrees_refl)+)
 apply (case_tac[!] C1, simp_all split: if_split_asm)
 apply (tactic {* TRYALL (clarify_tac @{context}) *}, simp_all add: disjoint_minus [THEN sym])
 apply (fastforce simp add: agrees_def)+
