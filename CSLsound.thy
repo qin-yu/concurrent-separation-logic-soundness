@@ -57,9 +57,10 @@ lemma sat_istar_map_expand:
               \<and> snd \<sigma> = (h1 ++ h2)
               \<and> disjoint (dom h1) (dom h2))"
 apply (case_tac \<sigma>, rename_tac s h, clarify)
-apply (induction l arbitrary: \<sigma>, auto)
+apply (induction l arbitrary: \<sigma>, auto) (*
 apply (intro exI conjI, (simp add: hsimps)+)+
-done
+done *)
+oops
 
 subsubsection {* Precision *}
 
@@ -91,9 +92,10 @@ text {* The separating conjunction of precise assertions is precise: *}
 lemma precise_istar:
   "\<forall>x \<in> set l. precise x \<Longrightarrow> precise (Aistar l)"
 apply (induct l, simp_all (no_asm) add: precise_def)
+oops (*
 apply (clarsimp simp add: map_add_assoc [THEN sym])
 apply (drule (3) preciseD, simp_all, clarsimp?)+
-done
+done *)
 
 subsubsection {* Auxiliary definition for resource environments *}
 
@@ -110,7 +112,7 @@ lemma sat_envs_expand:
               \<and> snd \<sigma> = h1 ++ h2 \<and> disjoint (dom h1) (dom h2))" 
 apply (simp add: envs_def distinct_remove1_removeAll [THEN sym] add: list_minus_remove1)
 apply (subst sat_istar_map_expand [where f=\<Gamma> and r=r], simp_all)
-done
+oops
 
 lemma envs_upd:
   "r \<notin> set l \<Longrightarrow> envs (\<Gamma>(r := R)) l l' = envs \<Gamma> l l'"
@@ -269,12 +271,13 @@ apply (rule conjI, subst (asm) accesses_agrees, simp_all)
 apply (clarify, drule_tac X="fvC C \<union> fvAs \<Gamma> \<union> fvA Q" in red_agrees, 
        simp (no_asm), fast, simp (no_asm), fast, clarify)
 apply (drule (1) all5_impD, clarsimp)
-apply (drule impD, erule assns_agreesE, simp add: agreesC, clarify)
+apply (drule impD, erule assns_agreesE, simp add: agreesC, clarify) (*
 apply (rule_tac x="h'" and y="hJ'" in ex2I, simp add: hsimps)
 apply (rule conjI, erule assns_agreesE, subst agreesC, assumption)
 apply (erule (1) mall4_imp2D, simp add: agreesC)
 apply (drule red_properties, auto)
-done
+done *)
+oops
 
 subsection {* Soundness of the proof rules *}
 
@@ -299,7 +302,7 @@ lemma safe_par:
   \<Longrightarrow> safe n (Cpar C1 C2) s (h1 ++ h2) J (Q1 ** Q2)"
 apply (induct n arbitrary: C1 C2 s h1 h2 bl1 bl2, simp, clarsimp)
 apply (rule conjI, clarify)
- -- {* no aborts *}
+ -- {* no aborts *} (*
  apply (erule aborts.cases, simp_all add: hsimps)
     apply (clarify, drule_tac a="h2 ++ hF" in all_impD, simp_all add: hsimps)
    apply (clarify, drule_tac allD, drule_tac a="h1 ++ hF" in all_impD, simp_all add: hsimps)
@@ -336,7 +339,8 @@ apply (rule conjI, erule order_trans, simp)+
   apply (clarify)
   apply (rule_tac x="h1 ++ h2" in exI, rule_tac x="hJ" in exI, simp add: hsimps)
   apply (rule_tac safe_skip, simp, (rule exI, erule conjI)+, simp)
-done
+done*)
+oops
 
 theorem rule_par:
  "\<lbrakk> \<Gamma> \<turnstile> {P1} C1 {Q1} ; \<Gamma> \<turnstile> {P2} C2 {Q2};
@@ -419,7 +423,7 @@ lemma safe_frame:
 apply (induct n arbitrary: C s h hR, simp, clarsimp)
 apply (rule conjI, clarify, fast)
 apply (rule conjI, clarify)
- -- {* no aborts *}
+ -- {* no aborts *} (*
  apply (drule_tac a="hR ++ hF" in all_impD, simp, simp add: hsimps)
 -- {* accesses *}
 apply (rule conjI, erule order_trans, simp)
@@ -431,7 +435,8 @@ apply (subst map_add_commute, simp add: hsimps)
 apply (drule mall4D, erule mimp4D, simp_all add: hsimps)
  apply (erule (1) disjoint_search)
 apply (subst assn_agrees, simp_all, fastforce)
-done
+done*)
+oops
 
 theorem rule_frame:
  "\<lbrakk> \<Gamma> \<turnstile> {P} C {Q} ; disjoint (fvA R) (wrC C) \<rbrakk>
@@ -451,9 +456,10 @@ apply (clarify, erule_tac red.cases, simp_all, clarify)
  apply (drule (1) all5_imp2D, simp_all)
  apply (simp add: envs_def list_minus_removeAll [THEN sym] locked_eq)+
  apply fast
-apply (clarsimp simp add: envs_def, rename_tac hQ hJ)
+apply (clarsimp simp add: envs_def, rename_tac hQ hJ) (*
 apply (rule_tac x="hQ" and y="hJ" in ex2I, simp add: hsimps, fast)
-done
+done *)
+oops
 
 theorem rule_with:
   "\<lbrakk> \<Gamma> \<turnstile> {Aconj (P ** \<Gamma> r) (Apure B)} C {Q ** \<Gamma> r} \<rbrakk>
@@ -582,9 +588,10 @@ apply (rule conjI)
 apply (clarify, erule red.cases, simp_all, clarsimp)
 apply (rule_tac x="h(edenot E sa \<mapsto> edenot E' sa)" in exI, rule_tac x="hJ" in exI, simp)
 apply (rule conjI [rotated], clarsimp) 
-apply (subst map_add_assoc [THEN sym], subst map_add_commute, simp add: hsimps)
+apply (subst map_add_assoc [THEN sym], subst map_add_commute, simp add: hsimps)(*
 apply (subst map_add_upd [THEN sym], simp add: hsimps del: map_add_upd)
-done
+done*)
+oops
 
 theorem rule_alloc:
   "\<lbrakk> x \<notin> fvE E \<union> fvAs \<Gamma> \<rbrakk>
