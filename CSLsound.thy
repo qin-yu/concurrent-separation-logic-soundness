@@ -50,7 +50,7 @@ where
   "P \<sqsubseteq> Q \<equiv> (\<forall>\<sigma>. \<sigma> \<Turnstile> P \<longrightarrow> \<sigma> \<Turnstile> Q)"
 
 lemma sat_istar_map_expand:
-  "\<lbrakk> r \<in> set l \<rbrakk> \<Longrightarrow>  
+  "\<lbrakk> r \<in># mset l \<rbrakk> \<Longrightarrow>  
      \<sigma> \<Turnstile> Aistar (map f l)
      \<longleftrightarrow> (\<exists>h1 h2. (fst \<sigma>, h1) \<Turnstile> f r
               \<and> (fst \<sigma>, h2) \<Turnstile> Aistar (map f (remove1 r l))
@@ -104,7 +104,7 @@ where
   "envs \<Gamma> l l' \<equiv> Aistar (map \<Gamma> (list_minus l l'))"
 
 lemma sat_envs_expand:
-  "\<lbrakk> r \<in> set l; r \<notin> set l'; distinct l \<rbrakk> \<Longrightarrow>  
+  "\<lbrakk> r \<in># mset l; r \<notin># mset l'; distinct l \<rbrakk> \<Longrightarrow>  
      \<sigma> \<Turnstile> envs \<Gamma> l l' 
      \<longleftrightarrow> (\<exists>h1 h2. (fst \<sigma>, h1) \<Turnstile> \<Gamma> r 
               \<and> (fst \<sigma>, h2) \<Turnstile> envs \<Gamma> (removeAll r l) l'
@@ -114,16 +114,16 @@ apply (subst sat_istar_map_expand [where f=\<Gamma> and r=r], simp_all)
 done
 
 lemma envs_upd:
-  "r \<notin> set l \<Longrightarrow> envs (\<Gamma>(r := R)) l l' = envs \<Gamma> l l'"
-  "r \<in> set l' \<Longrightarrow> envs (\<Gamma>(r := R)) l l' = envs \<Gamma> l l'"
+  "r \<notin># mset l \<Longrightarrow> envs (\<Gamma>(r := R)) l l' = envs \<Gamma> l l'"
+  "r \<in># mset l' \<Longrightarrow> envs (\<Gamma>(r := R)) l l' = envs \<Gamma> l l'"
 by (simp_all add: envs_def)
 
 lemma envs_removeAll_irr: 
-  "r \<notin> set l \<Longrightarrow> envs \<Gamma> l (removeAll r l') = envs \<Gamma> l l'"
+  "r \<notin># mset l \<Longrightarrow> envs \<Gamma> l (removeAll r l') = envs \<Gamma> l l'"
 by (simp add: envs_def list_minus_removeAll_irr)
 
 lemma envs_removeAll2:
-  "r \<in> set l' \<Longrightarrow> envs \<Gamma> (removeAll r l) (removeAll r l') = envs \<Gamma> l l'"
+  "r \<in># mset l' \<Longrightarrow> envs \<Gamma> (removeAll r l) (removeAll r l') = envs \<Gamma> l l'"
 by (simp add: envs_def list_minus_removeAll2)
 
 lemma envs_app:
