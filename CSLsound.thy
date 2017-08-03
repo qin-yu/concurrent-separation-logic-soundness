@@ -57,10 +57,9 @@ lemma sat_istar_map_expand:
               \<and> snd \<sigma> = (h1 ++ h2)
               \<and> disjoint (dom h1) (dom h2))"
 apply (case_tac \<sigma>, rename_tac s h, clarify)
-apply (induction l arbitrary: \<sigma>, auto) (*
-apply (intro exI conjI, (simp add: hsimps)+)+
-done *)
-oops
+apply (induction l arbitrary: \<sigma>, auto) 
+apply (intro exI conjI, (simp add:  map_add_commute map_add_left_commute)+, simp add: disjoint_commute)+
+done 
 
 subsubsection {* Precision *}
 
@@ -112,7 +111,7 @@ lemma sat_envs_expand:
               \<and> snd \<sigma> = h1 ++ h2 \<and> disjoint (dom h1) (dom h2))" 
 apply (simp add: envs_def distinct_remove1_removeAll [THEN sym] add: list_minus_remove1)
 apply (subst sat_istar_map_expand [where f=\<Gamma> and r=r], simp_all)
-oops
+done
 
 lemma envs_upd:
   "r \<notin> set l \<Longrightarrow> envs (\<Gamma>(r := R)) l l' = envs \<Gamma> l l'"
@@ -271,13 +270,12 @@ apply (rule conjI, subst (asm) accesses_agrees, simp_all)
 apply (clarify, drule_tac X="fvC C \<union> fvAs \<Gamma> \<union> fvA Q" in red_agrees, 
        simp (no_asm), fast, simp (no_asm), fast, clarify)
 apply (drule (1) all5_impD, clarsimp)
-apply (drule impD, erule assns_agreesE, simp add: agreesC, clarify) (*
-apply (rule_tac x="h'" and y="hJ'" in ex2I, simp add: hsimps)
+apply (drule impD, erule assns_agreesE, simp add: agreesC, clarify)
+apply (rule_tac x="h'" and y="hJ'" in ex2I, simp)
 apply (rule conjI, erule assns_agreesE, subst agreesC, assumption)
 apply (erule (1) mall4_imp2D, simp add: agreesC)
 apply (drule red_properties, auto)
-done *)
-oops
+done
 
 subsection {* Soundness of the proof rules *}
 
@@ -302,10 +300,10 @@ lemma safe_par:
   \<Longrightarrow> safe n (Cpar C1 C2) s (h1 ++ h2) J (Q1 ** Q2)"
 apply (induct n arbitrary: C1 C2 s h1 h2 bl1 bl2, simp, clarsimp)
 apply (rule conjI, clarify)
- -- {* no aborts *} (*
- apply (erule aborts.cases, simp_all add: hsimps)
-    apply (clarify, drule_tac a="h2 ++ hF" in all_impD, simp_all add: hsimps)
-   apply (clarify, drule_tac allD, drule_tac a="h1 ++ hF" in all_impD, simp_all add: hsimps)
+ -- {* no aborts *} (*simp add: map_add_commute map_add_left_commute, simp add: disjoint_commute*)
+ apply (erule aborts.cases, simp_all add: map_add_commute map_add_left_commute, simp_all add: disjoint_commute)
+    apply (clarify, drule_tac a="h2 ++ hF" in all_impD, simp_all add: map_add_commute map_add_left_commute)
+   apply (clarify, drule_tac allD, drule_tac a="h1 ++ hF" in all_impD, simp_all add: map_add_commute map_add_left_commute, simp_all add: disjoint_commute)
  -- {* no races *}
  apply (clarsimp, erule notE, erule disjoint_search [rotated], erule disjoint_search,
         erule order_trans [OF writes_accesses])+
@@ -313,7 +311,7 @@ apply (rule conjI, clarify)
 apply (rule conjI, erule order_trans, simp)+
 -- {* step *}
  apply (clarsimp, erule red_par_cases) 
- -- {* C1 does a step *}
+ -- {* C1 does a step *} (*
   apply (clarify, drule_tac a="hJ" and b="h2 ++ hF" in all2D, drule all3_impD, 
          simp_all add: hsimps envs_app locked_eq, clarsimp)
   apply (rule_tac x="h' ++ h2" in exI, rule_tac x="hJ'" in exI, simp add: hsimps)
@@ -347,36 +345,37 @@ theorem rule_par:
     disjoint (fvC C1 \<union> fvA Q1 \<union> fvAs \<Gamma>) (wrC C2);
     disjoint (fvC C2 \<union> fvA Q2 \<union> fvAs \<Gamma>) (wrC C1) \<rbrakk>
   \<Longrightarrow> \<Gamma> \<turnstile> {P1 ** P2} (Cpar C1 C2) {Q1 ** Q2}"
-by (auto simp add: CSL_def intro!: safe_par)
+apply (auto simp add: CSL_def intro!: safe_par)
+oops
 
 subsubsection {* Resource declaration *}
 
 lemma safe_resource:
  "\<lbrakk> safe n C s h (\<Gamma>(r := R)) Q; wf_cmd C; disjoint (fvA R) (wrC C) \<rbrakk> \<Longrightarrow>
-     (\<forall>hR. r \<notin> locked C \<longrightarrow> disjoint (dom h) (dom hR) \<longrightarrow> (s,hR) \<Turnstile> R \<longrightarrow> safe n (Cresource r C) s (h ++ hR) \<Gamma> (Q ** R))
-   \<and> (r \<in> locked C \<longrightarrow> safe n (Cresource r C) s h \<Gamma> (Q ** R))"
+     (\<forall>hR. r \<notin># locked C \<longrightarrow> disjoint (dom h) (dom hR) \<longrightarrow> (s,hR) \<Turnstile> R \<longrightarrow> safe n (Cresource r C) s (h ++ hR) \<Gamma> (Q ** R))
+   \<and> (r \<in># locked C \<longrightarrow> safe n (Cresource r C) s h \<Gamma> (Q ** R))"
 apply (induct n arbitrary: C s h, simp, clarsimp)
 apply (rule conjI, clarify)
  apply (rule conjI, clarify)
   -- {* no aborts *}
   apply (erule aborts.cases, simp_all, clarsimp)
-  apply (drule_tac a="hR ++ hF" in all_impD, simp, simp add: hsimps)
+  apply (drule_tac a="hR ++ hF" in all_impD, simp add: map_add_commute map_add_left_commute, simp add: disjoint_commute)
  -- {* accesses *}
  apply (rule conjI, erule order_trans, simp)
  -- {* step *}
  apply (clarify, frule red_properties, clarsimp)
  apply (erule red.cases, simp_all, clarsimp, rename_tac C s C' s' hh)
  -- {* normal step *}
-  apply (case_tac "r \<in> set (llocked C')", simp_all add: locked_eq)
-   apply (drule_tac a="hJ ++ hR" and b="hF" and c=C' and d=s' and e=hh in all5D, simp add: hsimps)
+  apply (case_tac "r \<in># mset (llocked C')", simp_all add: locked_eq)
+   apply (drule_tac a="hJ ++ hR" and b="hF" and c=C' and d=s' and e=hh in all5D, simp add: map_add_commute map_add_left_commute, simp add: disjoint_commute)
    apply (drule impD, subst sat_envs_expand [where r=r], simp_all)
      apply (rule wf_cmd_distinct_locked, erule (1) red_wf_cmd)
     apply (intro exI conjI, simp, simp_all add: envs_upd)
    apply (clarsimp simp add: envs_removeAll_irr) 
    apply (drule (1) mall3_imp2D, erule (1) red_wf_cmd)
    apply (drule mimpD, fast, clarsimp) 
-   apply (intro exI conjI, simp+)
-  -- {* @{term "r \<notin> locked C'"} *}
+   apply (intro exI conjI, simp+) (*here goes wrong and reminds me i need to change the first nonterminating lemma to mset version and continue with others*)
+  -- {* @{term "r \<notin> locked C'"} *} 
   apply (drule_tac a="hJ" and b="hR ++ hF" and c=C' and d=s' and e=hh in all5D, simp add: hsimps)
   apply (clarsimp simp add: envs_upd)
   apply (drule (1) mall3_imp2D, erule (1) red_wf_cmd)
